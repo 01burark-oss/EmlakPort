@@ -47,6 +47,7 @@
             --frame-width: 480px;
             --easing: cubic-bezier(0.4, 0, 0.2, 1);
             --logo-fill: #1e293b;
+            --logo-port: #2563eb; /* Sapphire Blue */
         }
 
         .dark {
@@ -59,6 +60,7 @@
             --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
             --logo-fill: #f9fafb;
             --primary: #f9fafb;
+            --logo-port: #60a5fa; /* Sky Blue */
         }
 
         /* --- THEME TRANSITIONS --- */
@@ -70,21 +72,21 @@
         #splash {
             position: fixed;
             inset: 0;
-            background: #ffffff;
+            background: var(--bg);
             z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.8s var(--easing), visibility 0.8s;
+            transition: opacity 0.8s var(--easing), visibility 0.8s, background-color 0.3s var(--easing);
         }
         #splash.hidden {
             opacity: 0;
             visibility: hidden;
         }
         .splash-logo {
-            width: 120px;
-            height: 120px;
+            width: 180px;
+            height: 180px;
             opacity: 0;
             transform: scale(0.9);
             transition: opacity 1.2s var(--easing), transform 1.2s var(--easing);
@@ -93,8 +95,23 @@
             opacity: 1;
             transform: scale(1);
         }
+        .splash-title {
+            margin-top: 0;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: var(--text-main);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 1s var(--easing), transform 1s var(--easing), color 0.3s var(--easing);
+            white-space: nowrap;
+        }
+        .splash-title.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
         .tagline {
-            margin-top: 1.5rem;
+            margin-top: 0.5rem;
             font-size: 0.8rem;
             font-weight: 500;
             color: var(--accent);
@@ -107,6 +124,12 @@
         .tagline.visible {
             opacity: 0.8;
             transform: translateY(0);
+        }
+
+        /* --- LOGO STYLING --- */
+        .logo-port {
+            color: var(--logo-port);
+            transition: color 0.3s var(--easing);
         }
 
         /* --- BASE LAYOUT --- */
@@ -159,8 +182,21 @@
         }
 
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .logo { display: flex; align-items: center; gap: 0.75rem; font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--text-main); }
-        .logo-icon { width: 32px; height: 32px; fill: var(--logo-fill); }
+        .logo { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.15rem;
+            font-family: 'Playfair Display', serif; 
+            font-size: 1.8rem;
+            font-weight: 900; 
+            color: var(--text-main); 
+        }
+        .logo-icon { 
+            width: 48px;
+            height: 48px; 
+            fill: var(--logo-fill); 
+            transition: fill 0.3s var(--easing); 
+        }
 
         .theme-toggle {
             background: transparent;
@@ -330,6 +366,38 @@
         }
         .modal-container.active .modal-content { transform: translateY(0); }
 
+        /* Custom Confirm Modal */
+        #confirmModal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        #confirmModal.active { display: flex; }
+        .confirm-box {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 320px;
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            animation: slide-confirm 0.3s var(--easing);
+        }
+        @keyframes slide-confirm { 
+            from { transform: translateY(20px) scale(0.9); opacity: 0; } 
+            to { transform: translateY(0) scale(1); opacity: 1; } 
+        }
+        .confirm-box h3 { margin: 0 0 1rem; color: var(--text-main); font-weight: 800; font-size: 1.4rem; }
+        .confirm-box p { margin: 0 0 2rem; color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
+        .confirm-actions { display: flex; flex-direction: column; gap: 0.75rem; }
+
         #toast {
             position: fixed;
             bottom: 100px;
@@ -425,7 +493,8 @@
         .comm-selector button.active { background: var(--card-bg); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
         /* Typography accents */
-        h2, h3 { font-family: 'Playfair Display', serif; }
+        h2, h3 { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Playfair Display', serif; }
     </style>
     <script type="importmap">
     {
@@ -441,25 +510,19 @@
 </head>
 <body class="light">
 
-<!-- SPLASH SCREEN -->
 <div id="splash">
     <div class="splash-logo" id="splashLogo">
         <svg viewBox="0 0 2048 2048" xmlns="http://www.w3.org/2000/svg">
-            <g transform="translate(0.000000,2048.000000) scale(0.100000,-0.100000)" fill="#1e293b" stroke="none">
-                <path d="M10064 16141 c-79 -26 -143 -64 -225 -133 -46 -38 -345 -282 -484 -394 -44 -36 -103 -85 -131 -109 -28 -25 -75 -64 -106 -87 -64 -50 -358 -287 -374 -303 -6 -5 -66 -55 -134 -110 -68 -55 -142 -116 -164 -136 -23 -19 -63 -53 -91 -74 -27 -22 -66 -53 -86 -70 -20 -16 -54 -44 -75 -62 -22 -17 -68 -56 -104 -85 -204 -169 -258 -207 -263 -189 -2 10 -5 160 -5 332 -1 173 -2 360 -2 417 l0 102 -515 0 -515 0 0 -867 0 -868 -87 -70 c-47 -38 -109 -88 -137 -110 -28 -21 -103 -82 -167 -135 -64 -52 -155 -126 -203 -165 -210 -168 -278 -231 -357 -330 -82 -102 -109 -160 -135 -295 -22 -114 -21 -4501 1 -4637 70 -430 341 -757 740 -893 185 -62 105 -60 2009 -60 954 0 1737 4 1740 8 2 4 -11 9 -30 10 -43 3 -144 40 -144 53 0 5 -8 9 -18 9 -10 0 -24 9 -32 20 -8 11 -19 20 -26 20 -14 0 -66 65 -91 115 -102 201 -62 418 100 547 29 22 68 48 87 56 41 18 35 16 83 26 20 5 40 12 43 17 3 5 -703 9 -1680 9 -1672 0 -1686 0 -1740 20 -74 28 -100 51 -133 118 l-28 57 0 995 0 995 915 3 914 2 -276 278 c-321 324 -370 389 -402 547 l-13 60 -569 5 -569 5 -3 702 -2 701 47 34 c48 35 203 160 298 242 46 39 344 282 450 366 24 19 85 69 135 110 50 41 148 121 218 178 70 57 167 136 215 175 49 40 135 110 191 157 57 47 147 121 201 165 54 44 130 107 169 141 39 33 96 80 127 105 58 45 90 71 330 269 77 63 177 144 222 180 95 74 191 153 396 325 79 66 157 131 175 145 17 13 81 66 143 117 217 180 335 273 348 273 10 0 148 -109 165 -130 3 -3 43 -37 90 -75 47 -38 137 -112 201 -165 64 -52 145 -117 180 -145 35 -27 66 -52 69 -55 7 -9 192 -163 305 -255 55 -44 131 -107 169 -140 39 -33 105 -87 146 -120 41 -33 86 -70 100 -83 14 -12 61 -51 104 -85 44 -34 203 -165 354 -290 151 -125 298 -245 327 -267 28 -21 58 -45 66 -52 26 -26 179 -148 186 -148 15 0 634 621 630 631 -1 4 -37 35 -80 70 -43 35 -111 91 -151 124 -40 33 -129 107 -198 165 -111 93 -204 170 -286 236 -15 12 -78 64 -141 115 -62 52 -125 103 -140 114 -14 11 -94 76 -177 145 -83 69 -219 181 -304 250 -225 184 -337 275 -445 365 -53 44 -114 94 -135 110 -50 39 -269 218 -295 242 -41 36 -141 119 -203 168 -35 28 -98 78 -139 113 -180 151 -383 198 -579 133z"/>
+            <g transform="translate(0.000000,2048.000000) scale(0.100000,-0.100000)" fill="var(--logo-fill)" stroke="none">
+                <path d="M10064 16141 c-79 -26 -143 -64 -225 -133 -46 -38 -345 -282 -484 -394 -44 -36 -103 -85 -131 -109 -28 -25 -75 -64 -106 -87 -64 -50 -358 -287 -374 -303 -6 -5 -66 -55 -134 -110 -68 -55 -142 -116 -164 -136 -23 -19 -63 -53 -91 -74 -27 -22 -66 -53 -86 -70 -20 -16 -54 -44 -75 -62 -22 -17 -68 -56 -104 -85 -204 -169 -258 -207 -263 -189 -2 10 -5 160 -5 332 -1 173 -2 360 -2 417 l0 102 -515 0 -515 0 0 -867 0 -868 -87 -70 c-47 -38 -109 -88 -137 -110 -28 -21 -103 -82 -167 -135 -64 -52 -155 -126 -203 -165 -210 -168 -278 -231 -357 -330 -82 -102 -109 -160 -135 -295 -22 -114 -21 -4501 1 -4637 70 -430 341 -757 740 -893 -185 -62 105 -60 2009 -60 954 0 1737 4 1740 8 2 4 -11 9 -30 10 -43 3 -144 40 -144 53 0 5 -8 9 -18 9 -10 0 -24 9 -32 20 -8 11 -19 20 -26 20 -14 0 -66 65 -91 115 -102 201 -62 418 100 547 29 22 68 48 87 56 41 18 35 16 83 26 20 5 40 12 43 17 3 5 -703 9 -1680 9 -1672 0 -1686 0 -1740 20 -74 28 -100 51 -133 118 l-28 57 0 995 0 995 915 3 914 2 -276 278 c-321 324 -370 389 -402 547 l-13 60 -569 5 -569 5 -3 702 -2 701 47 34 c48 35 203 160 298 242 46 39 -344 282 450 366 24 19 85 69 135 110 50 41 -148 121 218 178 70 57 167 136 215 175 49 40 135 110 191 157 57 47 147 121 201 165 54 44 130 107 169 141 39 33 -96 80 127 105 58 45 90 71 330 269 77 63 177 144 222 180 95 74 191 153 396 325 79 66 157 131 175 145 17 13 81 66 143 117 217 180 335 273 348 273 10 0 148 -109 165 -130 3 -3 43 -37 90 -75 47 -38 137 -112 201 -165 64 -52 145 -117 180 -145 35 -27 66 -52 69 -55 7 -9 192 -163 305 -255 55 -44 131 -107 169 -140 39 -33 105 -87 146 -120 41 -33 86 -70 100 -83 14 -12 61 -51 104 -85 44 -34 203 -165 354 -290 151 -125 298 -245 327 -267 28 -21 58 -45 66 -52 26 -26 179 -148 186 -148 15 0 634 621 630 631 -1 4 -37 35 -80 70 -43 35 -111 91 -151 124 -40 33 -129 107 -198 165 -111 93 -204 170 -286 236 -15 12 -78 64 -141 115 -62 52 -125 103 -140 114 -14 11 -94 76 -177 145 -83 69 -219 181 -304 250 -225 184 -337 275 -445 365 -53 44 -114 94 -135 110 -50 39 -269 218 -295 242 -41 36 -141 119 -203 168 -35 28 -98 78 -139 113 -180 151 -383 198 -579 133z"/>
                 <path d="M9568 12995 l-3 -285 283 0 282 0 0 285 0 285 -280 0 -279 0 -3 -285z"/>
                 <path d="M10350 12995 l0 -285 283 0 282 0 -2 273 c-1 149 -3 278 -3 285 0 9 -63 12 -280 12 l-280 0 0 -285z"/>
                 <path d="M9570 12200 l0 -290 278 2 277 3 3 288 2 287 -280 0 -280 0 0 -290z"/>
                 <path d="M10350 12200 l0 -290 285 0 285 0 -2 288 -3 287 -282 3 -283 2 0 -290z"/>
-                <path d="M7550 4590 l0 -1000 78 -1 c42 -1 138 -1 212 0 l135 0 3 1001 2 1000 -215 0 -215 0 0 -1000z"/>
-                <path d="M10030 4590 l0 -1000 153 -1 c83 0 172 -1 197 -1 25 0 51 0 58 1 9 1 12 46 12 189 l0 188 68 64 c37 36 83 80 103 98 l36 33 86 -113 c48 -62 118 -153 157 -203 39 -49 99 -127 133 -172 59 -78 64 -83 102 -84 47 -2 114 -2 329 0 l158 1 -44 53 c-24 28 -80 99 -122 157 -43 58 -91 119 -106 135 -15 17 -85 107 -156 200 -71 94 -150 197 -176 229 -27 33 -48 64 -48 69 0 5 129 140 288 299 158 159 289 293 290 298 2 6 -91 10 -250 10 l-254 0 -287 -285 c-157 -157 -291 -285 -297 -285 -7 0 -10 176 -10 560 l0 560 -210 0 -210 0 0 -1000z"/>
-                <path d="M2960 4538 l0 -948 688 -1 c378 0 708 -2 735 -4 l47 -4 0 180 0 179 -517 2 -518 3 0 220 0 220 443 3 442 2 0 165 0 165 -445 0 -445 0 0 210 0 210 505 0 505 0 0 170 0 170 -62 0 c-35 0 -359 1 -721 3 l-657 2 0 -947z"/>
-                <path d="M5470 5053 c-93 -15 -194 -63 -276 -129 -23 -18 -44 -30 -48 -27 -3 4 -6 37 -6 75 l0 68 -200 0 -200 0 0 -725 0 -725 200 0 c110 0 203 0 208 0 4 0 10 192 13 427 6 480 7 491 78 580 58 73 115 98 226 98 77 0 98 -4 140 -25 54 -28 105 -92 126 -158 9 -26 14 -173 16 -479 l4 -443 162 -1 c89 0 183 -2 208 -4 l47 -3 5 417 c6 501 9 519 99 617 69 75 208 106 321 72 58 -18 119 -81 148 -153 24 -59 24 -64 27 -502 l3 -443 204 0 c180 0 204 2 209 17 9 23 5 775 -5 903 -11 145 -53 269 -119 356 -28 37 -115 106 -163 131 -152 77 -391 83 -573 15 -62 -23 -156 -86 -207 -139 l-38 -40 -69 68 c-78 77 -178 131 -274 148 -57 11 -214 13 -266 4z"/>
-                <path d="M8765 5046 c-44 -8 -114 -24 -155 -36 -100 -28 -260 -106 -260 -126 0 -9 32 -75 72 -147 l72 -132 95 47 c216 107 464 104 580 -5 43 -41 71 -101 71 -154 l0 -41 -262 -4 c-230 -4 -273 -8 -343 -27 -159 -43 -261 -117 -312 -226 -26 -55 -28 -70 -28 -175 0 -154 21 -209 111 -297 88 -85 179 -129 309 -148 205 -30 391 14 506 122 26 25 52 42 57 39 6 -3 8 -37 5 -76 l-5 -70 169 -1 c92 -1 179 -2 193 -3 l25 -1 3 467 c2 435 1 474 -18 558 -24 113 -57 176 -138 261 -71 76 -157 126 -272 159 -99 28 -357 36 -475 16z m487 -911 c-4 -98 -24 -146 -84 -200 -95 -85 -262 -109 -375 -54 -145 70 -112 280 51 320 17 4 117 6 221 6 l190 -2 -3 -70z"/>
-                <path d="M16430 5000 c0 -19 3 -21 12 -12 9 9 9 15 0 24 -9 9 -12 7 -12 -12z"/>
             </g>
         </svg>
     </div>
+    <div class="splash-title font-display" id="splashTitle">Emlak<span class="logo-port">Port</span></div>
     <div class="tagline" id="tagline">Made by Burak Özmen</div>
 </div>
 
@@ -468,17 +531,15 @@
         <div class="header-top">
             <div class="logo">
                 <svg class="logo-icon" viewBox="0 0 2048 2048">
-                    <g transform="translate(0.000000,2048.000000) scale(0.100000,-0.100000)" stroke="none">
-                        <path d="M10064 16141 c-79 -26 -143 -64 -225 -133 -46 -38 -345 -282 -484 -394 -44 -36 -103 -85 -131 -109 -28 -25 -75 -64 -106 -87 -64 -50 -358 -287 -374 -303 -6 -5 -66 -55 -134 -110 -68 -55 -142 -116 -164 -136 -23 -19 -63 -53 -91 -74 -27 -22 -66 -53 -86 -70 -20 -16 -54 -44 -75 -62 -22 -17 -68 -56 -104 -85 -204 -169 -258 -207 -263 -189 -2 10 -5 160 -5 332 -1 173 -2 360 -2 417 l0 102 -515 0 -515 0 0 -867 0 -868 -87 -70 c-47 -38 -109 -88 -137 -110 -28 -21 -103 -82 -167 -135 -64 -52 -155 -126 -203 -165 -210 -168 -278 -231 -357 -330 -82 -102 -109 -160 -135 -295 -22 -114 -21 -4501 1 -4637 70 -430 341 -757 740 -893 185 -62 105 -60 2009 -60 954 0 1737 4 1740 8 2 4 -11 9 -30 10 -43 3 -144 40 -144 53 0 5 -8 9 -18 9 -10 0 -24 9 -32 20 -8 11 -19 20 -26 20 -14 0 -66 65 -91 115 -102 201 -62 418 100 547 29 22 68 48 87 56 41 18 35 16 83 26 20 5 40 12 43 17 3 5 -703 9 -1680 9 -1672 0 -1686 0 -1740 20 -74 28 -100 51 -133 118 l-28 57 0 995 0 995 915 3 914 2 -276 278 c-321 324 -370 389 -402 547 l-13 60 -569 5 -569 5 -3 702 -2 701 47 34 c48 35 203 160 298 242 46 39 344 282 450 366 24 19 85 69 135 110 50 41 148 121 218 178 70 57 167 136 215 175 49 40 135 110 191 157 57 47 147 121 201 165 54 44 130 107 169 141 39 33 96 80 127 105 58 45 90 71 330 269 77 63 177 144 222 180 95 74 191 153 396 325 79 66 157 131 175 145 17 13 81 66 143 117 217 180 335 273 348 273 10 0 148 -109 165 -130 3 -3 43 -37 90 -75 47 -38 137 -112 201 -165 64 -52 145 -117 180 -145 35 -27 66 -52 69 -55 7 -9 192 -163 305 -255 55 -44 131 -107 169 -140 39 -33 105 -87 146 -120 41 -33 86 -70 100 -83 14 -12 61 -51 104 -85 44 -34 203 -165 354 -290 151 -125 298 -245 327 -267 28 -21 58 -45 66 -52 26 -26 179 -148 186 -148 15 0 634 621 630 631 -1 4 -37 35 -80 70 -43 35 -111 91 -151 124 -40 33 -129 107 -198 165 -111 93 -204 170 -286 236 -15 12 -78 64 -141 115 -62 52 -125 103 -140 114 -14 11 -94 76 -177 145 -83 69 -219 181 -304 250 -225 184 -337 275 -445 365 -53 44 -114 94 -135 110 -50 39 -269 218 -295 242 -41 36 -141 119 -203 168 -35 28 -98 78 -139 113 -180 151 -383 198 -579 133z"/>
+                    <g transform="translate(0.000000,2048.000000) scale(0.100000,-0.100000)" fill="var(--logo-fill)" stroke="none">
+                        <path d="M10064 16141 c-79 -26 -143 -64 -225 -133 -46 -38 -345 -282 -484 -394 -44 -36 -103 -85 -131 -109 -28 -25 -75 -64 -106 -87 -64 -50 -358 -287 -374 -303 -6 -5 -66 -55 -134 -110 -68 -55 -142 -116 -164 -136 -23 -19 -63 -53 -91 -74 -27 -22 -66 -53 -86 -70 -20 -16 -54 -44 -75 -62 -22 -17 -68 -56 -104 -85 -204 -169 -258 -207 -263 -189 -2 10 -5 160 -5 332 -1 173 -2 360 -2 417 l0 102 -515 0 -515 0 0 -867 0 -868 -87 -70 c-47 -38 -109 -88 -137 -110 -28 -21 -103 -82 -167 -135 -64 -52 -155 -126 -203 -165 -210 -168 -278 -231 -357 -330 -82 -102 -109 -160 -135 -295 -22 -114 -21 -4501 1 -4637 70 -430 341 -757 740 -893 -185 -62 105 -60 2009 -60 954 0 1737 4 1740 8 2 4 -11 9 -30 10 -43 3 -144 40 -144 53 0 5 -8 9 -18 9 -10 0 -24 9 -32 20 -8 11 -19 20 -26 20 -14 0 -66 65 -91 115 -102 201 -62 418 100 547 29 22 68 48 87 56 41 18 35 16 83 26 20 5 40 12 43 17 3 5 -703 9 -1680 9 -1672 0 -1686 0 -1740 20 -74 28 -100 51 -133 118 l-28 57 0 995 0 995 915 3 914 2 -276 278 c-321 324 -370 389 -402 547 l-13 60 -569 5 -569 5 -3 702 -2 701 47 34 c48 35 203 160 298 242 46 39 -344 282 450 366 24 19 85 69 135 110 50 41 -148 121 218 178 70 57 167 136 215 175 49 40 135 110 191 157 57 47 147 121 201 165 54 44 130 107 169 141 39 33 -96 80 127 105 58 45 90 71 330 269 77 63 177 144 222 180 95 74 191 153 396 325 79 66 157 131 175 145 17 13 81 66 143 117 217 180 335 273 348 273 10 0 148 -109 165 -130 3 -3 43 -37 90 -75 47 -38 137 -112 201 -165 64 -52 145 -117 180 -145 35 -27 66 -52 69 -55 7 -9 192 -163 305 -255 55 -44 131 -107 169 -140 39 -33 105 -87 146 -120 41 -33 86 -70 100 -83 14 -12 61 -51 104 -85 44 -34 203 -165 354 -290 151 -125 298 -245 327 -267 28 -21 58 -45 66 -52 26 -26 179 -148 186 -148 15 0 634 621 630 631 -1 4 -37 35 -80 70 -43 35 -111 91 -151 124 -40 33 -129 107 -198 165 -111 93 -204 170 -286 236 -15 12 -78 64 -141 115 -62 52 -125 103 -140 114 -14 11 -94 76 -177 145 -83 69 -219 181 -304 250 -225 184 -337 275 -445 365 -53 44 -114 94 -135 110 -50 39 -269 218 -295 242 -41 36 -141 119 -203 168 -35 28 -98 78 -139 113 -180 151 -383 198 -579 133z"/>
                     </g>
                 </svg>
-                EmlakPort
+                <span class="font-display">Emlak<span class="logo-port">Port</span></span>
             </div>
             <div style="display:flex; align-items:center; gap:0.5rem;">
                 <button class="theme-toggle" id="themeToggle" onclick="app.toggleTheme()" aria-label="Temayı Değiştir">
-                    <!-- Moon Icon (Light Mode) -->
                     <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    <!-- Sun Icon (Dark Mode) -->
                     <svg id="themeIconSun" style="display:none;" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                 </button>
                 <span style="font-size: 0.65rem; opacity: 0.6; font-weight: 800; letter-spacing: 0.1rem; text-transform: uppercase;">Elite CRM</span>
@@ -571,6 +632,18 @@
         </div>
     </div>
 
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="confirmModal">
+        <div class="confirm-box">
+            <h3 class="font-display">Silme Onayı</h3>
+            <p>Bu portföyü kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+            <div class="confirm-actions">
+                <button onclick="app.confirmDelete()" class="btn" style="background: var(--danger); color: white;">SİL</button>
+                <button onclick="app.cancelDelete()" class="btn btn-outline">İPTAL</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast">Çıkmak için tekrar basınız</div>
 </div>
 
@@ -592,6 +665,7 @@ const app = {
         filterContract: false,
         selectedId: null,
         editingId: null,
+        pendingDeleteId: null,
         lastBackPress: 0,
         tempImages: [],
         currentCommType: 'percentage',
@@ -601,12 +675,19 @@ const app = {
     init() {
         // SPLASH SEQUENCE
         setTimeout(() => {
-            document.getElementById('splashLogo').classList.add('visible');
+            const splashLogo = document.getElementById('splashLogo');
+            if(splashLogo) splashLogo.classList.add('visible');
             setTimeout(() => {
-                document.getElementById('tagline').classList.add('visible');
+                const title = document.getElementById('splashTitle');
+                if(title) title.classList.add('visible');
                 setTimeout(() => {
-                    document.getElementById('splash').classList.add('hidden');
-                }, 1500);
+                    const tagline = document.getElementById('tagline');
+                    if(tagline) tagline.classList.add('visible');
+                    setTimeout(() => {
+                        const splash = document.getElementById('splash');
+                        if(splash) splash.classList.add('hidden');
+                    }, 1500);
+                }, 600);
             }, 600);
         }, 500);
 
@@ -633,10 +714,11 @@ const app = {
     updateThemeUI() {
         const isDark = this.state.theme === 'dark';
         document.documentElement.classList.toggle('dark', isDark);
-        document.getElementById('themeIconMoon').style.display = isDark ? 'none' : 'block';
-        document.getElementById('themeIconSun').style.display = isDark ? 'block' : 'none';
+        const iconMoon = document.getElementById('themeIconMoon');
+        const iconSun = document.getElementById('themeIconSun');
+        if(iconMoon) iconMoon.style.display = isDark ? 'none' : 'block';
+        if(iconSun) iconSun.style.display = isDark ? 'block' : 'none';
         
-        // Update meta theme color
         const metaTheme = document.querySelector('meta[name="theme-color"]');
         if (metaTheme) metaTheme.setAttribute('content', isDark ? '#111827' : '#1e293b');
     },
@@ -654,6 +736,13 @@ const app = {
     handlePopState(e) {
         const detailOverlay = document.getElementById('detailOverlay');
         const modalContainer = document.getElementById('modalContainer');
+        const confirmModal = document.getElementById('confirmModal');
+
+        if (confirmModal && confirmModal.classList.contains('active')) {
+            confirmModal.classList.remove('active');
+            this.state.pendingDeleteId = null;
+            return;
+        }
 
         const isDetailOpen = detailOverlay && detailOverlay.classList.contains('active');
         const isModalOpen = modalContainer && modalContainer.classList.contains('active');
@@ -664,13 +753,12 @@ const app = {
             this.state.selectedId = null;
             this.state.editingId = null;
             this.state.tempImages = [];
-            history.pushState({ page: 'home' }, null, "");
             return;
         }
 
         const now = Date.now();
         if (now - this.state.lastBackPress < 2000) {
-            // Exit logic handled by system
+            // Exit sequence
         } else {
             this.state.lastBackPress = now;
             this.showToast("Çıkmak için tekrar basınız");
@@ -714,7 +802,6 @@ const app = {
                 this.updatePhotoGrid();
             } catch (error) {
                 console.error("Görsel işleme hatası:", error);
-                // Fallback to simple Base64 if compression crashes
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.state.tempImages.push(e.target.result);
@@ -751,7 +838,7 @@ const app = {
                         ctx.drawImage(img, 0, 0, width, height);
                         resolve(canvas.toDataURL('image/jpeg', 0.7));
                     } else {
-                        reject(new Error("Canvas context is not available"));
+                        reject(new Error("Canvas context error"));
                     }
                 };
                 img.onerror = reject;
@@ -821,8 +908,6 @@ const app = {
 
     handleSave(e) {
         e.preventDefault();
-        
-        // Target elements
         const saveBtn = document.getElementById('savePropertyBtn');
         const addressVal = document.getElementById('f_address').value.trim();
         const priceVal = document.getElementById('f_price').value.trim();
@@ -832,13 +917,11 @@ const app = {
         const phoneVal = document.getElementById('f_phone').value.trim();
         const contractVal = document.getElementById('f_contract').checked;
 
-        // Validation
         if (!addressVal || !priceVal || !ownerVal || !typeVal) {
-            alert("Lütfen zorunlu alanları (Adres, Fiyat, Sahip Bilgisi) doldurunuz.");
+            alert("Lütfen zorunlu alanları doldurunuz.");
             return;
         }
 
-        // Feedback
         const originalText = saveBtn.innerText;
         saveBtn.innerText = "Kaydediliyor...";
         saveBtn.disabled = true;
@@ -868,8 +951,8 @@ const app = {
             this.render();
             this.closeModal();
         } catch (err) {
-            console.error("Kaydetme hatası:", err);
-            alert("Kaydedilirken teknik bir hata oluştu.");
+            console.error(err);
+            alert("Bir hata oluştu.");
         } finally {
             saveBtn.innerText = originalText;
             saveBtn.disabled = false;
@@ -903,15 +986,15 @@ const app = {
             </div>
             <div style="padding: 2rem;">
                 <div style="font-weight:900; color:var(--accent); text-transform:uppercase; font-size:0.75rem; margin-bottom:0.5rem; letter-spacing: 0.1rem;">${p.type}</div>
-                <h2 style="font-weight: 900; font-size: 1.6rem; margin-bottom: 1.5rem; line-height: 1.2; color: var(--text-main);">${p.address}</h2>
+                <h2 class="font-display" style="font-weight: 900; font-size: 1.6rem; margin-bottom: 1.5rem; line-height: 1.2; color: var(--text-main);">Emlak<span class="logo-port">Port</span> Detayı</h2>
                 <div style="background:var(--card-bg); padding:1.5rem; border-radius:24px; display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; box-shadow: var(--shadow); margin-bottom: 2rem; border: 1px solid var(--border);">
                     <div>
                         <div style="font-size:0.65rem; color:var(--text-muted); font-weight:800; text-transform: uppercase;">FİYAT</div>
-                        <div style="font-weight:900; font-size:1.4rem; color: var(--text-main); font-family: 'Playfair Display', serif;">${this.fmt(p.price)} ₺</div>
+                        <div class="font-display" style="font-weight:900; font-size:1.4rem; color: var(--text-main);">${this.fmt(p.price)} ₺</div>
                     </div>
                     <div style="text-align:right">
                         <div style="font-size:0.65rem; color:var(--text-muted); font-weight:800; text-transform: uppercase;">HİZMET (${commDisplay})</div>
-                        <div style="font-weight:900; font-size:1.4rem; color:var(--success); font-family: 'Playfair Display', serif;">${this.fmt(earnings)} ₺</div>
+                        <div class="font-display" style="font-weight:900; font-size:1.4rem; color:var(--success);">${this.fmt(earnings)} ₺</div>
                     </div>
                 </div>
                 <div style="margin-top: 1.5rem; background:var(--card-bg); padding:1.2rem; border-radius:24px; border: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
@@ -921,12 +1004,18 @@ const app = {
                     </div>
                     <a href="tel:${p.phone}" class="btn btn-primary" style="padding: 0.75rem 1.2rem; width: auto; font-size: 0.85rem; text-decoration:none;">ARA</a>
                 </div>
-                <div style="margin-top:2.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <button class="btn btn-outline" onclick="app.openFormModal('${p.id}')">Düzenle</button>
-                    <button class="btn btn-outline" style="color:var(--danger); border-color:#fee2e2" onclick="app.deleteProp('${p.id}')">Kaydı Sil</button>
+                
+                <div style="margin-top: 2rem;">
+                  <button onclick="app.openFormModal('${p.id}')" class="btn btn-outline" style="width: 100%; margin-bottom: 1rem;">DÜZENLE</button>
+                  <button 
+                      onclick="app.requestDelete('${p.id}')" 
+                      style="background-color: #ef4444; color: white; border: none; width: 100%; padding: 12px; border-radius: 16px; font-weight: bold; cursor: pointer;">
+                      BU PORTFÖYÜ SİL
+                  </button>
                 </div>
             </div>
         `;
+
         const detailOverlay = document.getElementById('detailOverlay');
         if (detailOverlay) detailOverlay.classList.add('active');
         history.pushState({ modal: 'detail' }, null, "");
@@ -937,13 +1026,42 @@ const app = {
         if (detailOverlay && detailOverlay.classList.contains('active')) history.back(); 
     },
 
-    deleteProp(id) {
-        if(confirm("Silmek istediğinize emin misiniz?")) {
-            this.state.properties = this.state.properties.filter(x => x.id !== id);
-            this.save();
-            this.render();
+    requestDelete(id) {
+        this.state.pendingDeleteId = id;
+        const confirmModal = document.getElementById('confirmModal');
+        if (confirmModal) confirmModal.classList.add('active');
+        history.pushState({ modal: 'confirm' }, null, "");
+    },
+
+    cancelDelete() {
+        const confirmModal = document.getElementById('confirmModal');
+        if (confirmModal && confirmModal.classList.contains('active')) {
             history.back();
         }
+    },
+
+    confirmDelete() {
+        const id = this.state.pendingDeleteId;
+        if (!id) return;
+
+        // Delete Logic
+        this.state.properties = this.state.properties.filter(x => x.id !== id);
+        this.save();
+        this.render();
+        
+        // Manual UI cleanup to avoid double history.back race conditions
+        const confirmModal = document.getElementById('confirmModal');
+        const detailOverlay = document.getElementById('detailOverlay');
+        if (confirmModal) confirmModal.classList.remove('active');
+        if (detailOverlay) detailOverlay.classList.remove('active');
+        
+        this.state.pendingDeleteId = null;
+        this.state.selectedId = null;
+        
+        // Go back to Home in history stack
+        history.go(-2);
+        
+        this.showToast("Portföy silindi.");
     },
 
     fmt(n) { return new Intl.NumberFormat('tr-TR').format(n); },
@@ -952,7 +1070,7 @@ const app = {
         const list = document.getElementById('propertyList');
         if (!list) return;
         const filtered = this.state.properties.filter(p => {
-            const matches = p.address.toLowerCase().includes(this.state.search) || p.owner.toLowerCase().includes(this.state.search);
+            const matches = p.address.toLowerCase().includes(this.state.search) || (p.owner && p.owner.toLowerCase().includes(this.state.search));
             return matches && (this.state.filterContract ? p.contract : true);
         });
 
@@ -966,7 +1084,7 @@ const app = {
                 <div class="card-content">
                     <div class="card-address line-clamp-2">${p.address}</div>
                     <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                        <div class="card-price">${this.fmt(p.price)} ₺</div>
+                        <div class="card-price font-display">${this.fmt(p.price)} ₺</div>
                         <div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; text-transform: uppercase;">${p.owner}</div>
                     </div>
                 </div>
@@ -975,6 +1093,8 @@ const app = {
     }
 };
 
+// Global expose for inline handlers
+window.app = app;
 app.init();
 </script>
 
