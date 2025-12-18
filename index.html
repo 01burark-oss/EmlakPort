@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>EmlakPort</title>
+
+    <script>
+        // 1. BOOTLOADER FIX: Immediate SW Registration
+        if ('serviceWorker' in navigator) {
+            const swUrl = new URL('sw.js', window.location.href).href;
+            navigator.serviceWorker.register(swUrl).then(reg => {
+                console.log('[App] SW Registered');
+            }).catch(err => console.error('[App] SW Registration Failed', err));
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!navigator.onLine) document.body.style.display = 'block';
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #000000; /* Force black as main text color */
+            --success: #10b981;
+            --danger: #ef4444;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+
+        html, body {
+            height: 100%; margin: 0; padding: 0; overflow: hidden;
+            position: fixed; width: 100%; background-color: var(--primary);
+            user-select: none; -webkit-user-select: none; touch-action: none;
+        }
+
+        #app {
+            height: 100%; width: 100%; max-width: 500px; margin: 0 auto;
+            background-color: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
+            display: flex; flex-direction: column; position: relative; overscroll-behavior: contain;
+            touch-action: pan-y;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        input, textarea, select { user-select: text; -webkit-user-select: text; }
+
+        header {
+            background-color: var(--primary); color: white; padding: 1rem;
+            padding-top: calc(1rem + env(safe-area-inset-top)); flex-shrink: 0;
+            z-index: 40; position: sticky; top: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .logo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 800; }
+
+        .search-bar { display: flex; gap: 0.5rem; }
+        .search-input-wrapper { position: relative; flex: 1; }
+        .search-input-wrapper input {
+            width: 100%; background: rgba(255,255,255,0.2); border: none; border-radius: 8px;
+            padding: 0.6rem 0.6rem 0.6rem 2.2rem; color: white; font-size: 0.95rem; outline: none;
+        }
+        .search-input-wrapper input::placeholder { color: rgba(255,255,255,0.7); }
+        .search-input-wrapper svg { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; opacity: 0.8; }
+
+        .filter-toggle {
+            background: rgba(255,255,255,0.2); border: none; color: white; padding: 0 0.8rem;
+            border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+        }
+        .filter-toggle.active { background: var(--success); }
+
+        main { flex: 1; padding: 1rem; padding-bottom: 6rem; }
+
+        .property-card {
+            background: var(--card-bg); border-radius: var(--radius); margin-bottom: 1rem;
+            overflow: hidden; box-shadow: var(--shadow); border: 1px solid #e5e7eb; cursor: pointer;
+        }
+        .card-image { height: 160px; background-color: #e5e7eb; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .card-image img { width: 100%; height: 100%; object-fit: cover; }
+        .card-content { padding: 1rem; }
+        .card-address { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; color: #000000; line-height: 1.3; }
+        .card-price { font-size: 1.2rem; font-weight: 800; color: #000000; }
+
+        .fab {
+            position: fixed; bottom: 2rem; right: calc(50% - 220px);
+            width: 64px; height: 64px; border-radius: 32px; background: var(--primary);
+            color: white; display: flex; align-items: center; justify-content: center;
+            border: none; box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); cursor: pointer; z-index: 35;
+        }
+        @media (max-width: 500px) { .fab { right: 1.5rem; bottom: 1.5rem; } }
+
+        .detail-overlay {
+            position: fixed; inset: 0; max-width: 500px; margin: 0 auto;
+            background: var(--bg); z-index: 50; display: flex; flex-direction: column;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .detail-overlay.active { transform: translateX(0); }
+
+        .modal-container {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+            display: flex; align-items: flex-end; justify-content: center;
+            visibility: hidden; opacity: 0; transition: 0.3s ease;
+        }
+        .modal-container.active { visibility: visible; opacity: 1; }
+
+        .modal-content {
+            background: white; width: 100%; max-width: 500px; border-top-left-radius: 24px;
+            border-top-right-radius: 24px; padding: 1.5rem; padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+            max-height: 90%; overflow-y: auto; transform: translateY(100%);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-container.active .modal-content { transform: translateY(0); }
+
+        #toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: rgba(31, 41, 55, 0.95); color: white; padding: 12px 24px; border-radius: 25px;
+            font-size: 0.9rem; font-weight: 600; z-index: 9999; visibility: hidden; opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .btn {
+            padding: 1rem; border-radius: 12px; font-weight: 700; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 0.6rem; font-size: 1rem;
+        }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-outline { background: white; border: 1px solid #d1d5db; color: #374151; }
+
+        .form-row { margin-bottom: 1.2rem; }
+        .form-row label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: #374151; }
+        .form-input {
+            width: 100%; padding: 0.85rem; border-radius: 10px; border: 1px solid #d1d5db;
+            font-size: 1rem; color: #000000; outline: none;
+        }
+
+        .badge {
+            position: absolute; padding: 0.3rem 0.6rem; border-radius: 6px;
+            font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+        }
+        .badge-type { bottom: 0.6rem; left: 0.6rem; background: white; color: black; z-index: 2; }
+        .badge-contract { top: 0.6rem; right: 0.6rem; background: var(--success); color: white; z-index: 2; }
+        .badge-no { top: 0.6rem; right: 0.6rem; background: #374151; color: white; opacity: 0.9; z-index: 2; }
+
+        /* Photo Upload Styling */
+        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem; }
+        .photo-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-item .remove { position: absolute; top: 0; right: 0; background: var(--danger); color: white; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 0 0 0 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .photo-add { aspect-ratio: 1; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; cursor: pointer; }
+
+        .gallery { display: flex; overflow-x: auto; snap-type: x mandatory; height: 250px; background: #000; }
+        .gallery-item { flex: 0 0 100%; snap-align: center; display: flex; align-items: center; justify-content: center; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Commission Selector Styling */
+        .comm-selector {
+            display: flex;
+            background: #e5e7eb;
+            border-radius: 10px;
+            padding: 2px;
+            margin-bottom: 0.5rem;
+        }
+        .comm-selector button {
+            flex: 1;
+            border: none;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: #6b7280;
+        }
+        .comm-selector button.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "uuid": "https://esm.sh/uuid@^13.0.0"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <div class="header-top">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                EmlakPort
+            </div>
+            <span style="font-size: 0.6rem; opacity: 0.8; font-weight: 700;">PRO CRM</span>
+        </div>
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="searchInput" placeholder="Adres veya sahip ara..." oninput="app.handleSearch()">
+            </div>
+            <button id="filterBtn" class="filter-toggle" onclick="app.toggleFilter()">Sözleşmeli</button>
+        </div>
+    </header>
+
+    <main id="propertyList"></main>
+
+    <button class="fab" onclick="app.openFormModal()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    </button>
+
+    <!-- Details -->
+    <div id="detailOverlay" class="detail-overlay">
+        <div style="background: white; padding: 0.75rem 1rem; padding-top: calc(0.75rem + env(safe-area-inset-top)); display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #e5e7eb;">
+            <button onclick="app.closeDetail()" style="background:none; border:none; cursor:pointer; color: #6b7280;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <h3 style="font-weight: 800; flex:1; margin:0; color: #000;">Portföy Detayı</h3>
+        </div>
+        <div id="detailBody" style="flex:1; overflow-y:auto;"></div>
+    </div>
+
+    <!-- Form Modal -->
+    <div id="modalContainer" class="modal-container">
+        <div id="formModal" class="modal-content">
+            <h2 id="modalTitle" style="margin-bottom: 1.5rem; font-weight: 900; font-size: 1.4rem; color: #000;">Yeni Portföy</h2>
+            <form id="propertyForm" onsubmit="app.handleSave(event)">
+                <div class="form-row">
+                    <label>Adres Detayı</label>
+                    <textarea id="f_address" class="form-input" rows="2" required placeholder="Mahalle, Sokak..."></textarea>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                    <div class="form-row">
+                        <label>Mülk Tipi</label>
+                        <select id="f_type" class="form-input">
+                            <option>Daire</option><option>Arsa</option><option>Tarla</option>
+                            <option>Villa</option><option>Bahçe</option><option>İşyeri</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Fiyat (₺)</label>
+                        <input type="number" id="f_price" class="form-input" required placeholder="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Hizmet Bedeli (Komisyon)</label>
+                    <div class="comm-selector">
+                        <button type="button" id="btnCommPerc" onclick="app.setCommType('percentage')" class="active">Yüzdelik (%)</button>
+                        <button type="button" id="btnCommFixed" onclick="app.setCommType('fixed')">Sabit Tutar (₺)</button>
+                    </div>
+                    <input type="number" id="f_comm_value" class="form-input" required placeholder="Oran veya Tutar" step="any">
+                </div>
+
+                <div class="form-row" style="display:flex; align-items:center; gap: 0.75rem;">
+                    <input type="checkbox" id="f_contract" style="width: 20px; height: 20px;">
+                    <label style="margin-bottom:0; color:#000000;">Sözleşmeli mi?</label>
+                </div>
+                <div class="form-row">
+                    <label>Sahip Bilgisi</label>
+                    <input type="text" id="f_owner" class="form-input" required placeholder="Ad Soyad">
+                </div>
+                <div class="form-row">
+                    <label>Telefon</label>
+                    <input type="tel" id="f_phone" class="form-input" required placeholder="05XX XXX XX XX">
+                </div>
+                
+                <div class="form-row">
+                    <label>Fotoğraflar</label>
+                    <div id="photoGrid" class="photo-grid">
+                        <div class="photo-add" onclick="document.getElementById('fileInput').click()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" hidden multiple accept="image/*" onchange="app.handleFiles(this)">
+                </div>
+
+                <div style="display:flex; gap: 0.75rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline" style="flex:1" onclick="app.closeModal()">İptal</button>
+                    <button type="submit" class="btn btn-primary" style="flex:2">KAYDET</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast">Çıkmak için tekrar basınız</div>
+</div>
+
+<script>
+/**
+ * APP LOGIC
+ */
+const initialSeed = [
+    { id: '1', address: 'Sakarya Mah. Kıbrıs Şehitleri No:12, D:4, Biga', type: 'Daire', price: 3500000, commissionType: 'percentage', commissionValue: 2, owner: 'Ahmet Yılmaz', phone: '05321234567', contract: true, images: [], createdAt: Date.now() },
+    { id: '2', address: 'Karabiga Sahil Yolu, Denize Sıfır Arsa', type: 'Arsa', price: 1250000, commissionType: 'percentage', commissionValue: 4, owner: 'Mehmet Demir', phone: '05559876543', contract: false, images: [], createdAt: Date.now() },
+    { id: '3', address: 'Sinekçi Köyü Mevkii, Verimli Tarla', type: 'Tarla', price: 850000, commissionType: 'fixed', commissionValue: 25000, owner: 'Ayşe Kaya', phone: '05441230000', contract: true, images: [], createdAt: Date.now() },
+    { id: '4', address: 'Biga Şehir Merkezi, Kiralık Dükkan', type: 'İşyeri', price: 2200000, commissionType: 'percentage', commissionValue: 2, owner: 'Can Aksoy', phone: '05324445566', contract: false, images: [], createdAt: Date.now() }
+];
+
+const app = {
+    state: {
+        properties: JSON.parse(localStorage.getItem('emlak_premium_db')) || initialSeed,
+        search: '',
+        filterContract: false,
+        selectedId: null,
+        editingId: null,
+        lastBackPress: 0,
+        tempImages: [],
+        currentCommType: 'percentage'
+    },
+
+    init() {
+        if(!localStorage.getItem('emlak_premium_db')) this.save();
+        this.render();
+        
+        history.replaceState({ page: 'base' }, null, "");
+        history.pushState({ page: 'home' }, null, "");
+
+        window.onpopstate = (e) => this.handlePopState(e);
+
+        document.getElementById('modalContainer').onclick = (e) => {
+            if(e.target.id === 'modalContainer') this.closeModal();
+        };
+    },
+
+    save() { localStorage.setItem('emlak_premium_db', JSON.stringify(this.state.properties)); },
+
+    showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg; toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    },
+
+    handlePopState(e) {
+        const detailOverlay = document.getElementById('detailOverlay');
+        const modalContainer = document.getElementById('modalContainer');
+
+        const isDetailOpen = detailOverlay.classList.contains('active');
+        const isModalOpen = modalContainer.classList.contains('active');
+
+        if (isDetailOpen || isModalOpen) {
+            detailOverlay.classList.remove('active');
+            modalContainer.classList.remove('active');
+            this.state.selectedId = null;
+            this.state.editingId = null;
+            this.state.tempImages = [];
+            history.pushState({ page: 'home' }, null, "");
+            return;
+        }
+
+        const now = Date.now();
+        if (now - this.state.lastBackPress < 2000) {
+        } else {
+            this.state.lastBackPress = now;
+            this.showToast("Çıkmak için tekrar basınız");
+            history.pushState({ page: 'home' }, null, ""); 
+        }
+    },
+
+    handleSearch() {
+        this.state.search = document.getElementById('searchInput').value.toLowerCase();
+        this.render();
+    },
+
+    toggleFilter() {
+        this.state.filterContract = !this.state.filterContract;
+        document.getElementById('filterBtn').classList.toggle('active', this.state.filterContract);
+        this.render();
+    },
+
+    setCommType(type) {
+        this.state.currentCommType = type;
+        document.getElementById('btnCommPerc').classList.toggle('active', type === 'percentage');
+        document.getElementById('btnCommFixed').classList.toggle('active', type === 'fixed');
+        document.getElementById('f_comm_value').placeholder = type === 'percentage' ? 'Komisyon Oranı (%)' : 'Komisyon Tutarı (₺)';
+    },
+
+    handleFiles(input) {
+        const files = Array.from(input.files);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.state.tempImages.push(e.target.result);
+                this.updatePhotoGrid();
+            };
+            reader.readAsDataURL(file);
+        });
+        input.value = "";
+    },
+
+    removePhoto(index) {
+        this.state.tempImages.splice(index, 1);
+        this.updatePhotoGrid();
+    },
+
+    updatePhotoGrid() {
+        const grid = document.getElementById('photoGrid');
+        grid.innerHTML = this.state.tempImages.map((img, i) => `
+            <div class="photo-item">
+                <img src="${img}">
+                <div class="remove" onclick="app.removePhoto(${i})">×</div>
+            </div>
+        `).join('') + `
+            <div class="photo-add" onclick="document.getElementById('fileInput').click()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            </div>
+        `;
+    },
+
+    openFormModal(id = null) {
+        this.state.editingId = id;
+        this.state.tempImages = [];
+        const form = document.getElementById('propertyForm');
+        const modal = document.getElementById('modalContainer');
+        
+        if(id) {
+            const p = this.state.properties.find(x => x.id === id);
+            document.getElementById('modalTitle').innerText = "Portföyü Düzenle";
+            document.getElementById('f_address').value = p.address;
+            document.getElementById('f_type').value = p.type;
+            document.getElementById('f_price').value = p.price;
+            document.getElementById('f_owner').value = p.owner;
+            document.getElementById('f_phone').value = p.phone;
+            document.getElementById('f_contract').checked = p.contract;
+            document.getElementById('f_comm_value').value = p.commissionValue || p.rate || 0;
+            this.setCommType(p.commissionType || 'percentage');
+            this.state.tempImages = [...(p.images || [])];
+        } else {
+            document.getElementById('modalTitle').innerText = "Yeni Portföy";
+            form.reset();
+            this.setCommType('percentage');
+        }
+        
+        this.updatePhotoGrid();
+        modal.classList.add('active');
+        history.pushState({ modal: 'form' }, null, "");
+    },
+
+    closeModal() {
+        if (document.getElementById('modalContainer').classList.contains('active')) {
+            history.back();
+        }
+    },
+
+    handleSave(e) {
+        e.preventDefault();
+        const data = {
+            id: this.state.editingId || Date.now().toString(),
+            address: document.getElementById('f_address').value,
+            type: document.getElementById('f_type').value,
+            price: Number(document.getElementById('f_price').value),
+            commissionType: this.state.currentCommType,
+            commissionValue: Number(document.getElementById('f_comm_value').value),
+            owner: document.getElementById('f_owner').value,
+            phone: document.getElementById('f_phone').value,
+            contract: document.getElementById('f_contract').checked,
+            images: this.state.tempImages,
+            createdAt: Date.now()
+        };
+
+        if(this.state.editingId) {
+            this.state.properties = this.state.properties.map(p => p.id === this.state.editingId ? data : p);
+        } else {
+            this.state.properties.unshift(data);
+        }
+
+        this.save();
+        this.closeModal();
+        this.render();
+    },
+
+    openDetail(id) {
+        this.state.selectedId = id;
+        const p = this.state.properties.find(x => x.id === id);
+        const body = document.getElementById('detailBody');
+        
+        // Calculation based on type
+        let earnings = 0;
+        let commDisplay = "";
+        
+        const commValue = p.commissionValue || p.rate || 0;
+        const commType = p.commissionType || 'percentage';
+
+        if (commType === 'percentage') {
+            earnings = (p.price * commValue) / 100;
+            commDisplay = `%${commValue}`;
+        } else {
+            earnings = commValue;
+            commDisplay = `${this.fmt(commValue)} ₺`;
+        }
+
+        const images = p.images && p.images.length > 0 ? p.images : [];
+
+        body.innerHTML = `
+            <div class="gallery">
+                ${images.length > 0 ? images.map(img => `<div class="gallery-item"><img src="${img}"></div>`).join('') : '<div class="gallery-item" style="color:#555">Fotoğraf Yok</div>'}
+            </div>
+            <div style="padding: 1.5rem;">
+                <div style="font-weight:900; color:var(--primary); text-transform:uppercase; font-size:0.75rem; margin-bottom:0.4rem">${p.type}</div>
+                <h2 style="font-weight: 800; font-size: 1.25rem; margin-bottom: 1.25rem; line-height: 1.2; color: #000000;">${p.address}</h2>
+                <div style="background:white; padding:1.2rem; border-radius:15px; display:grid; grid-template-columns:1fr 1fr; gap:1rem; box-shadow:var(--shadow);">
+                    <div>
+                        <div style="font-size:0.65rem; color:#888; font-weight:700;">FİYAT</div>
+                        <div style="font-weight:900; font-size:1.2rem; color: #000000;">${this.fmt(p.price)} ₺</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:0.65rem; color:#888; font-weight:700;">HİZMET (${commDisplay})</div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--success);">${this.fmt(earnings)} ₺</div>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; background:white; padding:1rem; border-radius:15px; box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:800; font-size:1rem; color: #000000;">${p.owner}</div>
+                        <div style="color:#666; font-size:0.85rem;">${p.phone}</div>
+                    </div>
+                    <a href="tel:${p.phone}" class="btn btn-primary" style="padding: 0.6rem 1rem; width: auto; font-size: 0.8rem; text-decoration:none;">ARA</a>
+                </div>
+                <div style="margin-top:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <button class="btn btn-outline" onclick="app.openFormModal('${p.id}')">Düzenle</button>
+                    <button class="btn btn-outline" style="color:var(--danger); border-color:#fee2e2" onclick="app.deleteProp('${p.id}')">Sil</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('detailOverlay').classList.add('active');
+        history.pushState({ modal: 'detail' }, null, "");
+    },
+
+    closeDetail() { if (document.getElementById('detailOverlay').classList.contains('active')) history.back(); },
+
+    deleteProp(id) {
+        if(confirm("Silmek istediğinize emin misiniz?")) {
+            this.state.properties = this.state.properties.filter(x => x.id !== id);
+            this.save();
+            history.back();
+            this.render();
+        }
+    },
+
+    fmt(n) { return new Intl.NumberFormat('tr-TR').format(n); },
+
+    render() {
+        const list = document.getElementById('propertyList');
+        const filtered = this.state.properties.filter(p => {
+            const matches = p.address.toLowerCase().includes(this.state.search) || p.owner.toLowerCase().includes(this.state.search);
+            return matches && (this.state.filterContract ? p.contract : true);
+        });
+
+        list.innerHTML = filtered.map(p => `
+            <div class="property-card" onclick="app.openDetail('${p.id}')">
+                <div class="card-image">
+                    ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}">` : '<span style="color:#aaa; font-size:0.8rem; font-weight:700">Fotoğraf Yok</span>'}
+                    <div class="badge badge-type">${p.type}</div>
+                    <div class="badge ${p.contract ? 'badge-contract' : 'badge-no'}">${p.contract ? 'Sözleşmeli' : 'Sözleşmesiz'}</div>
+                </div>
+                <div class="card-content">
+                    <div class="card-address line-clamp-2" style="color: #000000;">${p.address}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="card-price" style="color: #000000;">${this.fmt(p.price)} ₺</div>
+                        <div style="font-size: 0.75rem; color: #000000; font-weight: 700;">${p.owner}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('') || '<div style="text-align:center; padding: 2rem; color: #888">Portföy bulunamadı.</div>';
+    }
+};
+
+app.init();
+</script>
+
+</body>
+</html>
