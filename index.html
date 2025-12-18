@@ -565,7 +565,7 @@
 
                 <div style="display:flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" style="flex:1" onclick="app.closeModal()">Vazgeç</button>
-                    <button type="submit" class="btn btn-primary" style="flex:2">KAYDET</button>
+                    <button type="submit" id="savePropertyBtn" class="btn btn-primary" style="flex:2">KAYDET</button>
                 </div>
             </form>
         </div>
@@ -637,27 +637,30 @@ const app = {
         document.getElementById('themeIconSun').style.display = isDark ? 'block' : 'none';
         
         // Update meta theme color
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#111827' : '#1e293b');
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme) metaTheme.setAttribute('content', isDark ? '#111827' : '#1e293b');
     },
 
     save() { localStorage.setItem('emlak_premium_db', JSON.stringify(this.state.properties)); },
 
     showToast(msg) {
         const toast = document.getElementById('toast');
-        toast.innerText = msg; toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
+        if (toast) {
+            toast.innerText = msg; toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
     },
 
     handlePopState(e) {
         const detailOverlay = document.getElementById('detailOverlay');
         const modalContainer = document.getElementById('modalContainer');
 
-        const isDetailOpen = detailOverlay.classList.contains('active');
-        const isModalOpen = modalContainer.classList.contains('active');
+        const isDetailOpen = detailOverlay && detailOverlay.classList.contains('active');
+        const isModalOpen = modalContainer && modalContainer.classList.contains('active');
 
         if (isDetailOpen || isModalOpen) {
-            detailOverlay.classList.remove('active');
-            modalContainer.classList.remove('active');
+            if (detailOverlay) detailOverlay.classList.remove('active');
+            if (modalContainer) modalContainer.classList.remove('active');
             this.state.selectedId = null;
             this.state.editingId = null;
             this.state.tempImages = [];
@@ -667,6 +670,7 @@ const app = {
 
         const now = Date.now();
         if (now - this.state.lastBackPress < 2000) {
+            // Exit logic handled by system
         } else {
             this.state.lastBackPress = now;
             this.showToast("Çıkmak için tekrar basınız");
@@ -675,34 +679,85 @@ const app = {
     },
 
     handleSearch() {
-        this.state.search = document.getElementById('searchInput').value.toLowerCase();
-        this.render();
+        const input = document.getElementById('searchInput');
+        if (input) {
+            this.state.search = input.value.toLowerCase();
+            this.render();
+        }
     },
 
     toggleFilter() {
         this.state.filterContract = !this.state.filterContract;
-        document.getElementById('filterBtn').classList.toggle('active', this.state.filterContract);
+        const btn = document.getElementById('filterBtn');
+        if (btn) btn.classList.toggle('active', this.state.filterContract);
         this.render();
     },
 
     setCommType(type) {
         this.state.currentCommType = type;
-        document.getElementById('btnCommPerc').classList.toggle('active', type === 'percentage');
-        document.getElementById('btnCommFixed').classList.toggle('active', type === 'fixed');
-        document.getElementById('f_comm_value').placeholder = type === 'percentage' ? 'Komisyon Oranı (%)' : 'Komisyon Tutarı (₺)';
+        const btnP = document.getElementById('btnCommPerc');
+        const btnF = document.getElementById('btnCommFixed');
+        const input = document.getElementById('f_comm_value');
+        if (btnP) btnP.classList.toggle('active', type === 'percentage');
+        if (btnF) btnF.classList.toggle('active', type === 'fixed');
+        if (input) input.placeholder = type === 'percentage' ? 'Komisyon Oranı (%)' : 'Komisyon Tutarı (₺)';
     },
 
-    handleFiles(input) {
+    async handleFiles(input) {
+        if (!input.files || input.files.length === 0) return;
         const files = Array.from(input.files);
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.state.tempImages.push(e.target.result);
+        
+        for (const file of files) {
+            try {
+                const compressedData = await this.compressImage(file);
+                this.state.tempImages.push(compressedData);
                 this.updatePhotoGrid();
-            };
-            reader.readAsDataURL(file);
-        });
+            } catch (error) {
+                console.error("Görsel işleme hatası:", error);
+                // Fallback to simple Base64 if compression crashes
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.state.tempImages.push(e.target.result);
+                    this.updatePhotoGrid();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
         input.value = "";
+    },
+
+    compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1024;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    } else {
+                        reject(new Error("Canvas context is not available"));
+                    }
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
     },
 
     removePhoto(index) {
@@ -712,6 +767,7 @@ const app = {
 
     updatePhotoGrid() {
         const grid = document.getElementById('photoGrid');
+        if (!grid) return;
         grid.innerHTML = this.state.tempImages.map((img, i) => `
             <div class="photo-item">
                 <img src="${img}">
@@ -729,22 +785,25 @@ const app = {
         this.state.tempImages = [];
         const form = document.getElementById('propertyForm');
         const modal = document.getElementById('modalContainer');
+        if (!modal) return;
         
         if(id) {
             const p = this.state.properties.find(x => x.id === id);
-            document.getElementById('modalTitle').innerText = "Portföyü Düzenle";
-            document.getElementById('f_address').value = p.address;
-            document.getElementById('f_type').value = p.type;
-            document.getElementById('f_price').value = p.price;
-            document.getElementById('f_owner').value = p.owner;
-            document.getElementById('f_phone').value = p.phone;
-            document.getElementById('f_contract').checked = p.contract;
-            document.getElementById('f_comm_value').value = p.commissionValue || p.rate || 0;
-            this.setCommType(p.commissionType || 'percentage');
-            this.state.tempImages = [...(p.images || [])];
+            if (p) {
+                document.getElementById('modalTitle').innerText = "Portföyü Düzenle";
+                document.getElementById('f_address').value = p.address;
+                document.getElementById('f_type').value = p.type;
+                document.getElementById('f_price').value = p.price;
+                document.getElementById('f_owner').value = p.owner;
+                document.getElementById('f_phone').value = p.phone;
+                document.getElementById('f_contract').checked = p.contract;
+                document.getElementById('f_comm_value').value = p.commissionValue || 0;
+                this.setCommType(p.commissionType || 'percentage');
+                this.state.tempImages = [...(p.images || [])];
+            }
         } else {
             document.getElementById('modalTitle').innerText = "Yeni Portföy";
-            form.reset();
+            if (form) form.reset();
             this.setCommType('percentage');
         }
         
@@ -754,46 +813,78 @@ const app = {
     },
 
     closeModal() {
-        if (document.getElementById('modalContainer').classList.contains('active')) {
+        const modal = document.getElementById('modalContainer');
+        if (modal && modal.classList.contains('active')) {
             history.back();
         }
     },
 
     handleSave(e) {
         e.preventDefault();
-        const data = {
-            id: this.state.editingId || Date.now().toString(),
-            address: document.getElementById('f_address').value,
-            type: document.getElementById('f_type').value,
-            price: Number(document.getElementById('f_price').value),
-            commissionType: this.state.currentCommType,
-            commissionValue: Number(document.getElementById('f_comm_value').value),
-            owner: document.getElementById('f_owner').value,
-            phone: document.getElementById('f_phone').value,
-            contract: document.getElementById('f_contract').checked,
-            images: this.state.tempImages,
-            createdAt: Date.now()
-        };
+        
+        // Target elements
+        const saveBtn = document.getElementById('savePropertyBtn');
+        const addressVal = document.getElementById('f_address').value.trim();
+        const priceVal = document.getElementById('f_price').value.trim();
+        const ownerVal = document.getElementById('f_owner').value.trim();
+        const typeVal = document.getElementById('f_type').value;
+        const commVal = document.getElementById('f_comm_value').value;
+        const phoneVal = document.getElementById('f_phone').value.trim();
+        const contractVal = document.getElementById('f_contract').checked;
 
-        if(this.state.editingId) {
-            this.state.properties = this.state.properties.map(p => p.id === this.state.editingId ? data : p);
-        } else {
-            this.state.properties.unshift(data);
+        // Validation
+        if (!addressVal || !priceVal || !ownerVal || !typeVal) {
+            alert("Lütfen zorunlu alanları (Adres, Fiyat, Sahip Bilgisi) doldurunuz.");
+            return;
         }
 
-        this.save();
-        this.closeModal();
-        this.render();
+        // Feedback
+        const originalText = saveBtn.innerText;
+        saveBtn.innerText = "Kaydediliyor...";
+        saveBtn.disabled = true;
+
+        try {
+            const data = {
+                id: this.state.editingId || Date.now().toString(),
+                address: addressVal,
+                type: typeVal,
+                price: Number(priceVal),
+                commissionType: this.state.currentCommType,
+                commissionValue: Number(commVal),
+                owner: ownerVal,
+                phone: phoneVal,
+                contract: contractVal,
+                images: this.state.tempImages,
+                createdAt: Date.now()
+            };
+
+            if(this.state.editingId) {
+                this.state.properties = this.state.properties.map(p => p.id === this.state.editingId ? data : p);
+            } else {
+                this.state.properties.unshift(data);
+            }
+
+            this.save();
+            this.render();
+            this.closeModal();
+        } catch (err) {
+            console.error("Kaydetme hatası:", err);
+            alert("Kaydedilirken teknik bir hata oluştu.");
+        } finally {
+            saveBtn.innerText = originalText;
+            saveBtn.disabled = false;
+        }
     },
 
     openDetail(id) {
         this.state.selectedId = id;
         const p = this.state.properties.find(x => x.id === id);
         const body = document.getElementById('detailBody');
+        if (!p || !body) return;
         
         let earnings = 0;
         let commDisplay = "";
-        const commValue = p.commissionValue || p.rate || 0;
+        const commValue = p.commissionValue || 0;
         const commType = p.commissionType || 'percentage';
 
         if (commType === 'percentage') {
@@ -836,18 +927,22 @@ const app = {
                 </div>
             </div>
         `;
-        document.getElementById('detailOverlay').classList.add('active');
+        const detailOverlay = document.getElementById('detailOverlay');
+        if (detailOverlay) detailOverlay.classList.add('active');
         history.pushState({ modal: 'detail' }, null, "");
     },
 
-    closeDetail() { if (document.getElementById('detailOverlay').classList.contains('active')) history.back(); },
+    closeDetail() { 
+        const detailOverlay = document.getElementById('detailOverlay');
+        if (detailOverlay && detailOverlay.classList.contains('active')) history.back(); 
+    },
 
     deleteProp(id) {
         if(confirm("Silmek istediğinize emin misiniz?")) {
             this.state.properties = this.state.properties.filter(x => x.id !== id);
             this.save();
-            history.back();
             this.render();
+            history.back();
         }
     },
 
@@ -855,6 +950,7 @@ const app = {
 
     render() {
         const list = document.getElementById('propertyList');
+        if (!list) return;
         const filtered = this.state.properties.filter(p => {
             const matches = p.address.toLowerCase().includes(this.state.search) || p.owner.toLowerCase().includes(this.state.search);
             return matches && (this.state.filterContract ? p.contract : true);
