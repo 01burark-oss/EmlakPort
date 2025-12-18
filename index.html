@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#1e293b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>EmlakPort</title>
-<link rel="manifest" href="manifest.json">
+    <title>EmlakPort | Elite CRM</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 
     <script>
-        // 1. BOOTLOADER FIX: Immediate SW Registration
         if ('serviceWorker' in navigator) {
             const swUrl = new URL('sw.js', window.location.href).href;
             navigator.serviceWorker.register(swUrl).then(reg => {
@@ -18,36 +20,107 @@
             }).catch(err => console.error('[App] SW Registration Failed', err));
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (!navigator.onLine) document.body.style.display = 'block';
-        });
+        // Immediate Theme Check to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('emlakport_theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
     </script>
 
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --bg: #f3f4f6;
+            /* Light Theme (Default) */
+            --primary: #1e293b;
+            --primary-dark: #0f172a;
+            --accent: #d4af37;
+            --bg: #f8f9fa;
             --card-bg: #ffffff;
-            --text-main: #000000;
+            --text-main: #111827;
+            --text-muted: #64748b;
+            --border: #e5e7eb;
             --success: #10b981;
             --danger: #ef4444;
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            --radius: 12px;
+            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
+            --radius: 20px;
             --frame-width: 480px;
+            --easing: cubic-bezier(0.4, 0, 0.2, 1);
+            --logo-fill: #1e293b;
         }
 
-        /* DESKTOP FRAME LAYOUT */
+        .dark {
+            /* Dark Theme (Elite) */
+            --bg: #111827;
+            --card-bg: #1f2937;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+            --logo-fill: #f9fafb;
+            --primary: #f9fafb;
+        }
+
+        /* --- THEME TRANSITIONS --- */
+        #app, header, .property-card, .btn, .modal-content, .detail-overlay, .form-input, .comm-selector button, body {
+            transition: background-color 0.3s var(--easing), color 0.3s var(--easing), border-color 0.3s var(--easing), box-shadow 0.3s var(--easing);
+        }
+
+        /* --- SPLASH SCREEN --- */
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s var(--easing), visibility 0.8s;
+        }
+        #splash.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .splash-logo {
+            width: 120px;
+            height: 120px;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 1.2s var(--easing), transform 1.2s var(--easing);
+        }
+        .splash-logo.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .tagline {
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 1s var(--easing), transform 1s var(--easing);
+        }
+        .tagline.visible {
+            opacity: 0.8;
+            transform: translateY(0);
+        }
+
+        /* --- BASE LAYOUT --- */
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #e5e7eb; /* Neutral desktop background */
+            background-color: var(--bg);
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
         }
 
         #app {
@@ -55,7 +128,7 @@
             width: 100%;
             max-width: var(--frame-width);
             background-color: var(--bg);
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             position: relative;
@@ -66,159 +139,350 @@
             -webkit-user-select: none;
         }
 
-        /* Ensure mobile feel on actual small screens */
         @media (max-width: 480px) {
-            body { background-color: var(--primary); }
             #app { box-shadow: none; max-width: 100%; }
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        input, textarea, select { user-select: text; -webkit-user-select: text; }
+        input, textarea, select { user-select: text; -webkit-user-select: text; font-family: 'Inter', sans-serif; }
 
         header {
-            background-color: var(--primary); color: white; padding: 1rem;
-            padding-top: calc(1rem + env(safe-area-inset-top)); flex-shrink: 0;
-            z-index: 40; position: sticky; top: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            padding: 1rem 1.5rem;
+            padding-top: calc(1rem + env(safe-area-inset-top));
+            flex-shrink: 0;
+            z-index: 40;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid var(--border);
         }
 
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-        .logo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 800; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--text-main); }
+        .logo-icon { width: 32px; height: 32px; fill: var(--logo-fill); }
 
-        .search-bar { display: flex; gap: 0.5rem; }
+        .theme-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .theme-toggle:active { background: var(--bg); }
+        .theme-toggle svg { width: 24px; height: 24px; stroke: currentColor; fill: none; }
+
+        .search-bar { display: flex; gap: 0.75rem; }
         .search-input-wrapper { position: relative; flex: 1; }
         .search-input-wrapper input {
-            width: 100%; background: rgba(255,255,255,0.2); border: none; border-radius: 8px;
-            padding: 0.6rem 0.6rem 0.6rem 2.2rem; color: white; font-size: 0.95rem; outline: none;
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.3s var(--easing);
         }
-        .search-input-wrapper input::placeholder { color: rgba(255,255,255,0.7); }
-        .search-input-wrapper svg { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; opacity: 0.8; }
+        .search-input-wrapper input:focus { border-color: var(--accent); }
+        .search-input-wrapper input::placeholder { color: var(--text-muted); }
+        .search-input-wrapper svg { position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: var(--text-muted); }
 
         .filter-toggle {
-            background: rgba(255,255,255,0.2); border: none; color: white; padding: 0 0.8rem;
-            border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0 1.2rem;
+            border-radius: 14px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s var(--easing);
         }
-        .filter-toggle.active { background: var(--success); }
+        .filter-toggle.active {
+            background: var(--primary);
+            color: var(--bg);
+            border-color: var(--primary);
+        }
 
-        main { flex: 1; padding: 1rem; padding-bottom: 6rem; }
+        main { flex: 1; padding: 1.5rem; padding-bottom: 7rem; }
 
+        /* --- CARDS --- */
         .property-card {
-            background: var(--card-bg); border-radius: var(--radius); margin-bottom: 1rem;
-            overflow: hidden; box-shadow: var(--shadow); border: 1px solid #e5e7eb; cursor: pointer;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.3s var(--easing), box-shadow 0.3s var(--easing);
         }
-        .card-image { height: 160px; background-color: #e5e7eb; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .property-card:active {
+            transform: scale(0.97) translateY(2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .card-image {
+            height: 200px;
+            background-color: var(--bg);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
         .card-image img { width: 100%; height: 100%; object-fit: cover; }
-        .card-content { padding: 1rem; }
-        .card-address { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; color: #000000; line-height: 1.3; }
-        .card-price { font-size: 1.2rem; font-weight: 800; color: #000000; }
+        .card-content { padding: 1.25rem; }
+        .card-address {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            line-height: 1.3;
+            font-family: 'Inter', sans-serif;
+        }
+        .card-price {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-main);
+            font-family: 'Playfair Display', serif;
+        }
 
         .fab {
-            position: fixed; bottom: 2rem; left: 50%;
-            transform: translateX(calc(-50% + 180px)); /* Position relative to frame center */
-            width: 64px; height: 64px; border-radius: 32px; background: var(--primary);
-            color: white; display: flex; align-items: center; justify-content: center;
-            border: none; box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); cursor: pointer; z-index: 35;
+            position: fixed;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(calc(-50% + 180px));
+            width: 64px;
+            height: 64px;
+            border-radius: 32px;
+            background: var(--primary);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 35;
+            transition: transform 0.2s var(--easing), background-color 0.3s;
         }
-        @media (max-width: 480px) { .fab { left: auto; right: 1.5rem; transform: none; bottom: 1.5rem; } }
+        .fab:active { transform: translateX(calc(-50% + 180px)) scale(0.85); }
+        @media (max-width: 480px) {
+            .fab { left: auto; right: 1.5rem; transform: none; bottom: 1.5rem; }
+            .fab:active { transform: scale(0.85); }
+        }
 
-        /* FIXED ELEMENTS ADJUSTED FOR FRAME */
+        /* --- TRANSITIONS --- */
         .detail-overlay {
-            position: fixed; inset: 0; left: 50%; margin: 0;
-            width: 100%; max-width: var(--frame-width);
-            background: var(--bg); z-index: 50; display: flex; flex-direction: column;
-            transform: translateX(50%); /* Hidden state: pushed off frame */
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: fixed;
+            inset: 0;
+            left: 50%;
+            margin: 0;
+            width: 100%;
+            max-width: var(--frame-width);
+            background: var(--bg);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(50%);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        .detail-overlay.active { transform: translateX(-50%); } /* Active state: centered in frame */
+        .detail-overlay.active { transform: translateX(-50%); }
 
         .modal-container {
-            position: fixed; inset: 0; left: 50%; width: 100%; max-width: var(--frame-width);
-            background: rgba(0,0,0,0.6); z-index: 100;
-            display: flex; align-items: flex-end; justify-content: center;
-            visibility: hidden; opacity: 0; transition: 0.3s ease;
+            position: fixed;
+            inset: 0;
+            left: 50%;
+            width: 100%;
+            max-width: var(--frame-width);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.4s var(--easing);
             transform: translateX(-50%);
         }
         .modal-container.active { visibility: visible; opacity: 1; }
 
         .modal-content {
-            background: white; width: 100%; border-top-left-radius: 24px;
-            border-top-right-radius: 24px; padding: 1.5rem; padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
-            max-height: 90%; overflow-y: auto; transform: translateY(100%);
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--card-bg);
+            width: 100%;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            padding: 2rem;
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+            max-height: 90%;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            color: var(--text-main);
         }
         .modal-container.active .modal-content { transform: translateY(0); }
 
         #toast {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
-            background: rgba(31, 41, 55, 0.95); color: white; padding: 12px 24px; border-radius: 25px;
-            font-size: 0.9rem; font-weight: 600; z-index: 9999; visibility: hidden; opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: calc(var(--frame-width) - 40px);
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(15, 23, 42, 0.95);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.4s var(--easing);
+            max-width: calc(var(--frame-width) - 60px);
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
 
+        /* --- BUTTONS & FORMS --- */
         .btn {
-            padding: 1rem; border-radius: 12px; font-weight: 700; border: none; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 0.6rem; font-size: 1rem;
+            padding: 1rem;
+            border-radius: 16px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            transition: all 0.2s var(--easing);
         }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-outline { background: white; border: 1px solid #d1d5db; color: #374151; }
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg);
+            width: 100%;
+            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:active { transform: scale(0.96); filter: brightness(1.2); }
+        .btn-outline {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+        .btn-outline:active { background: var(--bg); transform: scale(0.96); }
 
-        .form-row { margin-bottom: 1.2rem; }
-        .form-row label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: #374151; }
+        .form-row { margin-bottom: 1.5rem; }
+        .form-row label { display: block; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.6rem; color: var(--text-muted); letter-spacing: 0.05rem; }
         .form-input {
-            width: 100%; padding: 0.85rem; border-radius: 10px; border: 1px solid #d1d5db;
-            font-size: 1rem; color: #000000; outline: none;
+            width: 100%;
+            padding: 0.9rem 1.1rem;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 1rem;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.3s;
         }
+        .form-input:focus { border-color: var(--accent); }
 
         .badge {
-            position: absolute; padding: 0.3rem 0.6rem; border-radius: 6px;
+            position: absolute; padding: 0.4rem 0.8rem; border-radius: 10px;
             font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.05rem;
         }
-        .badge-type { bottom: 0.6rem; left: 0.6rem; background: white; color: black; z-index: 2; }
-        .badge-contract { top: 0.6rem; right: 0.6rem; background: var(--success); color: white; z-index: 2; }
-        .badge-no { top: 0.6rem; right: 0.6rem; background: #374151; color: white; opacity: 0.9; z-index: 2; }
+        .badge-type { bottom: 0.8rem; left: 0.8rem; background: var(--card-bg); color: var(--text-main); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.1); opacity: 0.95; }
+        .badge-contract { top: 0.8rem; right: 0.8rem; background: var(--success); color: white; z-index: 2; }
+        .badge-no { top: 0.8rem; right: 0.8rem; background: var(--text-muted); color: white; opacity: 0.9; z-index: 2; }
 
-        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem; }
-        .photo-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; }
+        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 0.75rem; }
+        .photo-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid var(--border); }
         .photo-item img { width: 100%; height: 100%; object-fit: cover; }
-        .photo-item .remove { position: absolute; top: 0; right: 0; background: var(--danger); color: white; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 0 0 0 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .photo-add { aspect-ratio: 1; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; cursor: pointer; }
+        .photo-item .remove { position: absolute; top: 0; right: 0; background: var(--danger); color: white; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 0 0 0 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .photo-add { aspect-ratio: 1; border: 2px dashed var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+        .photo-add:active { background: var(--border); transform: scale(0.95); }
 
-        .gallery { display: flex; overflow-x: auto; snap-type: x mandatory; height: 250px; background: #000; }
+        .gallery { display: flex; overflow-x: auto; snap-type: x mandatory; height: 300px; background: #000; }
         .gallery-item { flex: 0 0 100%; snap-align: center; display: flex; align-items: center; justify-content: center; }
         .gallery-item img { width: 100%; height: 100%; object-fit: contain; }
 
         .comm-selector {
-            display: flex; background: #e5e7eb; border-radius: 10px; padding: 2px; margin-bottom: 0.5rem;
+            display: flex; background: var(--bg); border-radius: 14px; padding: 4px; margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
         }
         .comm-selector button {
-            flex: 1; border: none; padding: 0.5rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px;
-            cursor: pointer; transition: all 0.2s; background: transparent; color: #6b7280;
+            flex: 1; border: none; padding: 0.6rem; font-size: 0.8rem; font-weight: 700; border-radius: 10px;
+            cursor: pointer; transition: all 0.3s var(--easing); background: transparent; color: var(--text-muted);
         }
-        .comm-selector button.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .comm-selector button.active { background: var(--card-bg); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* Typography accents */
+        h2, h3 { font-family: 'Playfair Display', serif; }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "uuid": "https://esm.sh/uuid@^13.0.0"
-  }
-}
-</script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3",
+        "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+        "uuid": "https://esm.sh/uuid@^13.0.0"
+      }
+    }
+    </script>
+<link rel="stylesheet" href="/index.css">
 </head>
-<body>
+<body class="light">
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+    <div class="splash-logo" id="splashLogo">
+        <svg viewBox="0 0 2048 2048" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(0.000000,2048.000000) scale(0.100000,-0.100000)" fill="#1e293b" stroke="none">
+                <path d="M10064 16141 c-79 -26 -143 -64 -225 -133 -46 -38 -345 -282 -484 -394 -44 -36 -103 -85 -131 -109 -28 -25 -75 -64 -106 -87 -64 -50 -358 -287 -374 -303 -6 -5 -66 -55 -134 -110 -68 -55 -142 -116 -164 -136 -23 -19 -63 -53 -91 -74 -27 -22 -66 -53 -86 -70 -20 -16 -54 -44 -75 -62 -22 -17 -68 -56 -104 -85 -204 -169 -258 -207 -263 -189 -2 10 -5 160 -5 332 -1 173 -2 360 -2 417 l0 102 -515 0 -515 0 0 -867 0 -868 -87 -70 c-47 -38 -109 -88 -137 -110 -28 -21 -103 -82 -167 -135 -64 -52 -155 -126 -203 -165 -210 -168 -278 -231 -357 -330 -82 -102 -109 -160 -135 -295 -22 -114 -21 -4501 1 -4637 70 -430 341 -757 740 -893 185 -62 105 -60 2009 -60 954 0 1737 4 1740 8 2 4 -11 9 -30 10 -43 3 -144 40 -144 53 0 5 -8 9 -18 9 -10 0 -24 9 -32 20 -8 11 -19 20 -26 20 -14 0 -66 65 -91 115 -102 201 -62 418 100 547 29 22 68 48 87 56 41 18 35 16 83 26 20 5 40 12 43 17 3 5 -703 9 -1680 9 -1672 0 -1686 0 -1740 20 -74 28 -100 51 -133 118 l-28 57 0 995 0 995 915 3 914 2 -276 278 c-321 324 -370 389 -402 547 l-13 60 -569 5 -569 5 -3 702 -2 701 47 34 c48 35 203 160 298 242 46 39 344 282 450 366 24 19 85 69 135 110 50 41 148 121 218 178 70 57 167 136 215 175 49 40 135 110 191 157 57 47 147 121 201 165 54 44 130 107 169 141 39 33 96 80 127 105 58 45 90 71 330 269 77 63 177 144 222 180 95 74 191 153 396 325 79 66 157 131 175 145 17 13 81 66 143 117 217 180 335 273 348 273 10 0 148 -109 165 -130 3 -3 43 -37 90 -75 47 -38 137 -112 201 -165 64 -52 145 -117 180 -145 35 -27 66 -52 69 -55 7 -9 192 -163 305 -255 55 -44 131 -107 169 -140 39 -33 105 -87 146 -120 41 -33 86 -70 100 -83 14 -12 61 -51 104 -85 44 -34 203 -165 354 -290 151 -125 298 -245 327 -267 28 -21 58 -45 66 -52 26 -26 179 -148 186 -148 15 0 634 621 630 631 -1 4 -37 35 -80 70 -43 35 -111 91 -151 124 -40 33 -129 107 -198 165 -111 93 -204 170 -286 236 -15 12 -78 64 -141 115 -62 52 -125 103 -140 114 -14 11 -94 76 -177 145 -83 69 -219 181 -304 250 -225 184 -337 275 -445 365 -53 44 -114 94 -135 110 -50 39 -269 218 -295 242 -41 36 -141 119 -203 168 -35 28 -98 78 -139 113 -180 151 -383 198 -579 133z"/>
+                <path d="M9568 12995 l-3 -285 283 0 282 0 0 285 0 285 -280 0 -279 0 -3 -285z"/>
+                <path d="M10350 12995 l0 -285 283 0 282 0 -2 273 c-1 149 -3 278 -3 285 0 9 -63 12 -280 12 l-280 0 0 -285z"/>
+                <path d="M9570 12200 l0 -290 278 2 277 3 3 288 2 287 -280 0 -280 0 0 -290z"/>
+                <path d="M10350 12200 l0 -290 285 0 285 0 -2 288 -3 287 -282 3 -283 2 0 -290z"/>
+                <path d="M7550 4590 l0 -1000 78 -1 c42 -1 138 -1 212 0 l135 0 3 1001 2 1000 -215 0 -215 0 0 -1000z"/>
+                <path d="M10030 4590 l0 -1000 153 -1 c83 0 172 -1 197 -1 25 0 51 0 58 1 9 1 12 46 12 189 l0 188 68 64 c37 36 83 80 103 98 l36 33 86 -113 c48 -62 118 -153 157 -203 39 -49 99 -127 133 -172 59 -78 64 -83 102 -84 47 -2 114 -2 329 0 l158 1 -44 53 c-24 28 -80 99 -122 157 -43 58 -91 119 -106 135 -15 17 -85 107 -156 200 -71 94 -150 197 -176 229 -27 33 -48 64 -48 69 0 5 129 140 288 299 158 159 289 293 290 298 2 6 -91 10 -250 10 l-254 0 -287 -285 c-157 -157 -291 -285 -297 -285 -7 0 -10 176 -10 560 l0 560 -210 0 -210 0 0 -1000z"/>
+                <path d="M2960 4538 l0 -948 688 -1 c378 0 708 -2 735 -4 l47 -4 0 180 0 179 -517 2 -518 3 0 220 0 220 443 3 442 2 0 165 0 165 -445 0 -445 0 0 210 0 210 505 0 505 0 0 170 0 170 -62 0 c-35 0 -359 1 -721 3 l-657 2 0 -947z"/>
+                <path d="M5470 5053 c-93 -15 -194 -63 -276 -129 -23 -18 -44 -30 -48 -27 -3 4 -6 37 -6 75 l0 68 -200 0 -200 0 0 -725 0 -725 200 0 c110 0 203 0 208 0 4 0 10 192 13 427 6 480 7 491 78 580 58 73 115 98 226 98 77 0 98 -4 140 -25 54 -28 105 -92 126 -158 9 -26 14 -173 16 -479 l4 -443 162 -1 c89 0 183 -2 208 -4 l47 -3 5 417 c6 501 9 519 99 617 69 75 208 106 321 72 58 -18 119 -81 148 -153 24 -59 24 -64 27 -502 l3 -443 204 0 c180 0 204 2 209 17 9 23 5 775 -5 903 -11 145 -53 269 -119 356 -28 37 -115 106 -163 131 -152 77 -391 83 -573 15 -62 -23 -156 -86 -207 -139 l-38 -40 -69 68 c-78 77 -178 131 -274 148 -57 11 -214 13 -266 4z"/>
+                <path d="M8765 5046 c-44 -8 -114 -24 -155 -36 -100 -28 -260 -106 -260 -126 0 -9 32 -75 72 -147 l72 -132 95 47 c216 107 464 104 580 -5 43 -41 71 -101 71 -154 l0 -41 -262 -4 c-230 -4 -273 -8 -343 -27 -159 -43 -261 -117 -312 -226 -26 -55 -28 -70 -28 -175 0 -154 21 -209 111 -297 88 -85 179 -129 309 -148 205 -30 391 14 506 122 26 25 52 42 57 39 6 -3 8 -37 5 -76 l-5 -70 169 -1 c92 -1 179 -2 193 -3 l25 -1 3 467 c2 435 1 474 -18 558 -24 113 -57 176 -138 261 -71 76 -157 126 -272 159 -99 28 -357 36 -475 16z m487 -911 c-4 -98 -24 -146 -84 -200 -95 -85 -262 -109 -375 -54 -145 70 -112 280 51 320 17 4 117 6 221 6 l190 -2 -3 -70z"/>
+                <path d="M16430 5000 c0 -19 3 -21 12 -12 9 9 9 15 0 24 -9 9 -12 7 -12 -12z"/>
+            </g>
+        </svg>
+    </div>
+    <div class="tagline" id="tagline">Made by Burak Özmen</div>
+</div>
 
 <div id="app">
     <header>
         <div class="header-top">
             <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <svg class="logo-icon" viewBox="0 0 2048 2048">
+                    <g transform="translate(0.000000,2048.000000) scale(0.100000,-0.100000)" stroke="none">
+                        <path d="M10064 16141 c-79 -26 -143 -64 -225 -133 -46 -38 -345 -282 -484 -394 -44 -36 -103 -85 -131 -109 -28 -25 -75 -64 -106 -87 -64 -50 -358 -287 -374 -303 -6 -5 -66 -55 -134 -110 -68 -55 -142 -116 -164 -136 -23 -19 -63 -53 -91 -74 -27 -22 -66 -53 -86 -70 -20 -16 -54 -44 -75 -62 -22 -17 -68 -56 -104 -85 -204 -169 -258 -207 -263 -189 -2 10 -5 160 -5 332 -1 173 -2 360 -2 417 l0 102 -515 0 -515 0 0 -867 0 -868 -87 -70 c-47 -38 -109 -88 -137 -110 -28 -21 -103 -82 -167 -135 -64 -52 -155 -126 -203 -165 -210 -168 -278 -231 -357 -330 -82 -102 -109 -160 -135 -295 -22 -114 -21 -4501 1 -4637 70 -430 341 -757 740 -893 185 -62 105 -60 2009 -60 954 0 1737 4 1740 8 2 4 -11 9 -30 10 -43 3 -144 40 -144 53 0 5 -8 9 -18 9 -10 0 -24 9 -32 20 -8 11 -19 20 -26 20 -14 0 -66 65 -91 115 -102 201 -62 418 100 547 29 22 68 48 87 56 41 18 35 16 83 26 20 5 40 12 43 17 3 5 -703 9 -1680 9 -1672 0 -1686 0 -1740 20 -74 28 -100 51 -133 118 l-28 57 0 995 0 995 915 3 914 2 -276 278 c-321 324 -370 389 -402 547 l-13 60 -569 5 -569 5 -3 702 -2 701 47 34 c48 35 203 160 298 242 46 39 344 282 450 366 24 19 85 69 135 110 50 41 148 121 218 178 70 57 167 136 215 175 49 40 135 110 191 157 57 47 147 121 201 165 54 44 130 107 169 141 39 33 96 80 127 105 58 45 90 71 330 269 77 63 177 144 222 180 95 74 191 153 396 325 79 66 157 131 175 145 17 13 81 66 143 117 217 180 335 273 348 273 10 0 148 -109 165 -130 3 -3 43 -37 90 -75 47 -38 137 -112 201 -165 64 -52 145 -117 180 -145 35 -27 66 -52 69 -55 7 -9 192 -163 305 -255 55 -44 131 -107 169 -140 39 -33 105 -87 146 -120 41 -33 86 -70 100 -83 14 -12 61 -51 104 -85 44 -34 203 -165 354 -290 151 -125 298 -245 327 -267 28 -21 58 -45 66 -52 26 -26 179 -148 186 -148 15 0 634 621 630 631 -1 4 -37 35 -80 70 -43 35 -111 91 -151 124 -40 33 -129 107 -198 165 -111 93 -204 170 -286 236 -15 12 -78 64 -141 115 -62 52 -125 103 -140 114 -14 11 -94 76 -177 145 -83 69 -219 181 -304 250 -225 184 -337 275 -445 365 -53 44 -114 94 -135 110 -50 39 -269 218 -295 242 -41 36 -141 119 -203 168 -35 28 -98 78 -139 113 -180 151 -383 198 -579 133z"/>
+                    </g>
+                </svg>
                 EmlakPort
             </div>
-            <span style="font-size: 0.6rem; opacity: 0.8; font-weight: 700;">PRO CRM</span>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button class="theme-toggle" id="themeToggle" onclick="app.toggleTheme()" aria-label="Temayı Değiştir">
+                    <!-- Moon Icon (Light Mode) -->
+                    <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <!-- Sun Icon (Dark Mode) -->
+                    <svg id="themeIconSun" style="display:none;" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                </button>
+                <span style="font-size: 0.65rem; opacity: 0.6; font-weight: 800; letter-spacing: 0.1rem; text-transform: uppercase;">Elite CRM</span>
+            </div>
         </div>
         <div class="search-bar">
             <div class="search-input-wrapper">
@@ -236,24 +500,24 @@
     </button>
 
     <div id="detailOverlay" class="detail-overlay">
-        <div style="background: white; padding: 0.75rem 1rem; padding-top: calc(0.75rem + env(safe-area-inset-top)); display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #e5e7eb;">
-            <button onclick="app.closeDetail()" style="background:none; border:none; cursor:pointer; color: #6b7280;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <div style="background: var(--card-bg); padding: 1rem 1.5rem; padding-top: calc(1rem + env(safe-area-inset-top)); display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border);">
+            <button onclick="app.closeDetail()" style="background:none; border:none; cursor:pointer; color: var(--text-main); padding: 0.5rem; margin-left: -0.5rem;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
-            <h3 style="font-weight: 800; flex:1; margin:0; color: #000;">Portföy Detayı</h3>
+            <h3 style="font-weight: 900; flex:1; margin:0; font-size: 1.2rem;">Portföy Detayı</h3>
         </div>
         <div id="detailBody" style="flex:1; overflow-y:auto;"></div>
     </div>
 
     <div id="modalContainer" class="modal-container">
         <div id="formModal" class="modal-content">
-            <h2 id="modalTitle" style="margin-bottom: 1.5rem; font-weight: 900; font-size: 1.4rem; color: #000;">Yeni Portföy</h2>
+            <h2 id="modalTitle" style="margin-bottom: 2rem; font-weight: 900; font-size: 1.6rem; color: var(--text-main);">Yeni Portföy</h2>
             <form id="propertyForm" onsubmit="app.handleSave(event)">
                 <div class="form-row">
                     <label>Adres Detayı</label>
-                    <textarea id="f_address" class="form-input" rows="2" required placeholder="Mahalle, Sokak..."></textarea>
+                    <textarea id="f_address" class="form-input" rows="3" required placeholder="Tam adres bilgisini giriniz..."></textarea>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-row">
                         <label>Mülk Tipi</label>
                         <select id="f_type" class="form-input">
@@ -276,9 +540,9 @@
                     <input type="number" id="f_comm_value" class="form-input" required placeholder="Oran veya Tutar" step="any">
                 </div>
 
-                <div class="form-row" style="display:flex; align-items:center; gap: 0.75rem;">
-                    <input type="checkbox" id="f_contract" style="width: 20px; height: 20px;">
-                    <label style="margin-bottom:0; color:#000000;">Sözleşmeli mi?</label>
+                <div class="form-row" style="display:flex; align-items:center; gap: 1rem; background: var(--bg); padding: 1rem; border-radius: 14px;">
+                    <input type="checkbox" id="f_contract" style="width: 22px; height: 22px; accent-color: var(--primary);">
+                    <label style="margin-bottom:0; color:var(--text-main); font-weight: 700;">Sözleşmeli Portföy</label>
                 </div>
                 <div class="form-row">
                     <label>Sahip Bilgisi</label>
@@ -299,8 +563,8 @@
                     <input type="file" id="fileInput" hidden multiple accept="image/*" onchange="app.handleFiles(this)">
                 </div>
 
-                <div style="display:flex; gap: 0.75rem; margin-top: 1rem;">
-                    <button type="button" class="btn btn-outline" style="flex:1" onclick="app.closeModal()">İptal</button>
+                <div style="display:flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline" style="flex:1" onclick="app.closeModal()">Vazgeç</button>
                     <button type="submit" class="btn btn-primary" style="flex:2">KAYDET</button>
                 </div>
             </form>
@@ -330,12 +594,25 @@ const app = {
         editingId: null,
         lastBackPress: 0,
         tempImages: [],
-        currentCommType: 'percentage'
+        currentCommType: 'percentage',
+        theme: localStorage.getItem('emlakport_theme') || 'light'
     },
 
     init() {
+        // SPLASH SEQUENCE
+        setTimeout(() => {
+            document.getElementById('splashLogo').classList.add('visible');
+            setTimeout(() => {
+                document.getElementById('tagline').classList.add('visible');
+                setTimeout(() => {
+                    document.getElementById('splash').classList.add('hidden');
+                }, 1500);
+            }, 600);
+        }, 500);
+
         if(!localStorage.getItem('emlak_premium_db')) this.save();
         this.render();
+        this.updateThemeUI();
         
         history.replaceState({ page: 'base' }, null, "");
         history.pushState({ page: 'home' }, null, "");
@@ -345,6 +622,22 @@ const app = {
         document.getElementById('modalContainer').onclick = (e) => {
             if(e.target.id === 'modalContainer') this.closeModal();
         };
+    },
+
+    toggleTheme() {
+        this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('emlakport_theme', this.state.theme);
+        this.updateThemeUI();
+    },
+
+    updateThemeUI() {
+        const isDark = this.state.theme === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
+        document.getElementById('themeIconMoon').style.display = isDark ? 'none' : 'block';
+        document.getElementById('themeIconSun').style.display = isDark ? 'block' : 'none';
+        
+        // Update meta theme color
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#111827' : '#1e293b');
     },
 
     save() { localStorage.setItem('emlak_premium_db', JSON.stringify(this.state.properties)); },
@@ -517,29 +810,29 @@ const app = {
             <div class="gallery">
                 ${images.length > 0 ? images.map(img => `<div class="gallery-item"><img src="${img}"></div>`).join('') : '<div class="gallery-item" style="color:#555">Fotoğraf Yok</div>'}
             </div>
-            <div style="padding: 1.5rem;">
-                <div style="font-weight:900; color:var(--primary); text-transform:uppercase; font-size:0.75rem; margin-bottom:0.4rem">${p.type}</div>
-                <h2 style="font-weight: 800; font-size: 1.25rem; margin-bottom: 1.25rem; line-height: 1.2; color: #000000;">${p.address}</h2>
-                <div style="background:white; padding:1.2rem; border-radius:15px; display:grid; grid-template-columns:1fr 1fr; gap:1rem; box-shadow:var(--shadow);">
+            <div style="padding: 2rem;">
+                <div style="font-weight:900; color:var(--accent); text-transform:uppercase; font-size:0.75rem; margin-bottom:0.5rem; letter-spacing: 0.1rem;">${p.type}</div>
+                <h2 style="font-weight: 900; font-size: 1.6rem; margin-bottom: 1.5rem; line-height: 1.2; color: var(--text-main);">${p.address}</h2>
+                <div style="background:var(--card-bg); padding:1.5rem; border-radius:24px; display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; box-shadow: var(--shadow); margin-bottom: 2rem; border: 1px solid var(--border);">
                     <div>
-                        <div style="font-size:0.65rem; color:#888; font-weight:700;">FİYAT</div>
-                        <div style="font-weight:900; font-size:1.2rem; color: #000000;">${this.fmt(p.price)} ₺</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:800; text-transform: uppercase;">FİYAT</div>
+                        <div style="font-weight:900; font-size:1.4rem; color: var(--text-main); font-family: 'Playfair Display', serif;">${this.fmt(p.price)} ₺</div>
                     </div>
                     <div style="text-align:right">
-                        <div style="font-size:0.65rem; color:#888; font-weight:700;">HİZMET (${commDisplay})</div>
-                        <div style="font-weight:900; font-size:1.2rem; color:var(--success);">${this.fmt(earnings)} ₺</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:800; text-transform: uppercase;">HİZMET (${commDisplay})</div>
+                        <div style="font-weight:900; font-size:1.4rem; color:var(--success); font-family: 'Playfair Display', serif;">${this.fmt(earnings)} ₺</div>
                     </div>
                 </div>
-                <div style="margin-top: 1.5rem; background:white; padding:1rem; border-radius:15px; box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center;">
+                <div style="margin-top: 1.5rem; background:var(--card-bg); padding:1.2rem; border-radius:24px; border: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="font-weight:800; font-size:1rem; color: #000000;">${p.owner}</div>
-                        <div style="color:#666; font-size:0.85rem;">${p.phone}</div>
+                        <div style="font-weight:800; font-size:1.1rem; color: var(--text-main);">${p.owner}</div>
+                        <div style="color:var(--text-muted); font-size:0.9rem;">${p.phone}</div>
                     </div>
-                    <a href="tel:${p.phone}" class="btn btn-primary" style="padding: 0.6rem 1rem; width: auto; font-size: 0.8rem; text-decoration:none;">ARA</a>
+                    <a href="tel:${p.phone}" class="btn btn-primary" style="padding: 0.75rem 1.2rem; width: auto; font-size: 0.85rem; text-decoration:none;">ARA</a>
                 </div>
-                <div style="margin-top:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div style="margin-top:2.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
                     <button class="btn btn-outline" onclick="app.openFormModal('${p.id}')">Düzenle</button>
-                    <button class="btn btn-outline" style="color:var(--danger); border-color:#fee2e2" onclick="app.deleteProp('${p.id}')">Sil</button>
+                    <button class="btn btn-outline" style="color:var(--danger); border-color:#fee2e2" onclick="app.deleteProp('${p.id}')">Kaydı Sil</button>
                 </div>
             </div>
         `;
@@ -563,31 +856,32 @@ const app = {
     render() {
         const list = document.getElementById('propertyList');
         const filtered = this.state.properties.filter(p => {
-            const matches = p.address.toLowerCase().includes(this.state.search) || p.ownerName.toLowerCase().includes(this.state.search);
+            const matches = p.address.toLowerCase().includes(this.state.search) || p.owner.toLowerCase().includes(this.state.search);
             return matches && (this.state.filterContract ? p.contract : true);
         });
 
         list.innerHTML = filtered.map(p => `
             <div class="property-card" onclick="app.openDetail('${p.id}')">
                 <div class="card-image">
-                    ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}">` : '<span style="color:#aaa; font-size:0.8rem; font-weight:700">Fotoğraf Yok</span>'}
+                    ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}">` : '<span style="color:var(--text-muted); font-size:0.75rem; font-weight:800; text-transform: uppercase; letter-spacing: 0.05rem;">Görsel Yok</span>'}
                     <div class="badge badge-type">${p.type}</div>
-                    <div class="badge ${p.contract ? 'badge-contract' : 'badge-no'}">${p.contract ? 'Sözleşmeli' : 'Sözleşmesiz'}</div>
+                    <div class="badge ${p.contract ? 'badge-contract' : 'badge-no'}">${p.contract ? 'Sözleşmeli' : 'Serbest'}</div>
                 </div>
                 <div class="card-content">
-                    <div class="card-address line-clamp-2" style="color: #000000;">${p.address}</div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div class="card-price" style="color: #000000;">${this.fmt(p.price)} ₺</div>
-                        <div style="font-size: 0.75rem; color: #000000; font-weight: 700;">${p.owner}</div>
+                    <div class="card-address line-clamp-2">${p.address}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                        <div class="card-price">${this.fmt(p.price)} ₺</div>
+                        <div style="font-size: 0.75rem; color: var(--accent); font-weight: 800; text-transform: uppercase;">${p.owner}</div>
                     </div>
                 </div>
             </div>
-        `).join('') || '<div style="text-align:center; padding: 2rem; color: #888">Portföy bulunamadı.</div>';
+        `).join('') || '<div style="text-align:center; padding: 4rem; color: var(--text-muted); font-weight: 600;">Portföy bulunamadı.</div>';
     }
 };
 
 app.init();
 </script>
 
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
