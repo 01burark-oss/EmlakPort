@@ -28,24 +28,47 @@
             --primary-dark: #1d4ed8;
             --bg: #f3f4f6;
             --card-bg: #ffffff;
-            --text-main: #000000; /* Force black as main text color */
+            --text-main: #000000;
             --success: #10b981;
             --danger: #ef4444;
             --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
             --radius: 12px;
+            --frame-width: 480px;
         }
 
+        /* DESKTOP FRAME LAYOUT */
         html, body {
-            height: 100%; margin: 0; padding: 0; overflow: hidden;
-            position: fixed; width: 100%; background-color: var(--primary);
-            user-select: none; -webkit-user-select: none; touch-action: none;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #e5e7eb; /* Neutral desktop background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         #app {
-            height: 100%; width: 100%; max-width: 500px; margin: 0 auto;
-            background-color: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
-            display: flex; flex-direction: column; position: relative; overscroll-behavior: contain;
+            height: 100vh;
+            width: 100%;
+            max-width: var(--frame-width);
+            background-color: var(--bg);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             touch-action: pan-y;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Ensure mobile feel on actual small screens */
+        @media (max-width: 480px) {
+            body { background-color: var(--primary); }
+            #app { box-shadow: none; max-width: 100%; }
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -88,29 +111,35 @@
         .card-price { font-size: 1.2rem; font-weight: 800; color: #000000; }
 
         .fab {
-            position: fixed; bottom: 2rem; right: calc(50% - 220px);
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(calc(-50% + 180px)); /* Position relative to frame center */
             width: 64px; height: 64px; border-radius: 32px; background: var(--primary);
             color: white; display: flex; align-items: center; justify-content: center;
             border: none; box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); cursor: pointer; z-index: 35;
         }
-        @media (max-width: 500px) { .fab { right: 1.5rem; bottom: 1.5rem; } }
+        @media (max-width: 480px) { .fab { left: auto; right: 1.5rem; transform: none; bottom: 1.5rem; } }
 
+        /* FIXED ELEMENTS ADJUSTED FOR FRAME */
         .detail-overlay {
-            position: fixed; inset: 0; max-width: 500px; margin: 0 auto;
+            position: fixed; inset: 0; left: 50%; margin: 0;
+            width: 100%; max-width: var(--frame-width);
             background: var(--bg); z-index: 50; display: flex; flex-direction: column;
-            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(50%); /* Hidden state: pushed off frame */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .detail-overlay.active { transform: translateX(0); }
+        .detail-overlay.active { transform: translateX(-50%); } /* Active state: centered in frame */
 
         .modal-container {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+            position: fixed; inset: 0; left: 50%; width: 100%; max-width: var(--frame-width);
+            background: rgba(0,0,0,0.6); z-index: 100;
             display: flex; align-items: flex-end; justify-content: center;
             visibility: hidden; opacity: 0; transition: 0.3s ease;
+            transform: translateX(-50%);
         }
         .modal-container.active { visibility: visible; opacity: 1; }
 
         .modal-content {
-            background: white; width: 100%; max-width: 500px; border-top-left-radius: 24px;
+            background: white; width: 100%; border-top-left-radius: 24px;
             border-top-right-radius: 24px; padding: 1.5rem; padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
             max-height: 90%; overflow-y: auto; transform: translateY(100%);
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -122,6 +151,8 @@
             background: rgba(31, 41, 55, 0.95); color: white; padding: 12px 24px; border-radius: 25px;
             font-size: 0.9rem; font-weight: 600; z-index: 9999; visibility: hidden; opacity: 0;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: calc(var(--frame-width) - 40px);
+            text-align: center;
         }
         #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -147,7 +178,6 @@
         .badge-contract { top: 0.6rem; right: 0.6rem; background: var(--success); color: white; z-index: 2; }
         .badge-no { top: 0.6rem; right: 0.6rem; background: #374151; color: white; opacity: 0.9; z-index: 2; }
 
-        /* Photo Upload Styling */
         .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem; }
         .photo-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ddd; }
         .photo-item img { width: 100%; height: 100%; object-fit: cover; }
@@ -158,38 +188,21 @@
         .gallery-item { flex: 0 0 100%; snap-align: center; display: flex; align-items: center; justify-content: center; }
         .gallery-item img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* Commission Selector Styling */
         .comm-selector {
-            display: flex;
-            background: #e5e7eb;
-            border-radius: 10px;
-            padding: 2px;
-            margin-bottom: 0.5rem;
+            display: flex; background: #e5e7eb; border-radius: 10px; padding: 2px; margin-bottom: 0.5rem;
         }
         .comm-selector button {
-            flex: 1;
-            border: none;
-            padding: 0.5rem;
-            font-size: 0.8rem;
-            font-weight: 700;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: transparent;
-            color: #6b7280;
+            flex: 1; border: none; padding: 0.5rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s; background: transparent; color: #6b7280;
         }
-        .comm-selector button.active {
-            background: white;
-            color: var(--primary);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+        .comm-selector button.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     </style>
 <script type="importmap">
 {
   "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "uuid": "https://esm.sh/uuid@^13.0.0"
   }
 }
@@ -221,7 +234,6 @@
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
     </button>
 
-    <!-- Details -->
     <div id="detailOverlay" class="detail-overlay">
         <div style="background: white; padding: 0.75rem 1rem; padding-top: calc(0.75rem + env(safe-area-inset-top)); display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #e5e7eb;">
             <button onclick="app.closeDetail()" style="background:none; border:none; cursor:pointer; color: #6b7280;">
@@ -232,7 +244,6 @@
         <div id="detailBody" style="flex:1; overflow-y:auto;"></div>
     </div>
 
-    <!-- Form Modal -->
     <div id="modalContainer" class="modal-container">
         <div id="formModal" class="modal-content">
             <h2 id="modalTitle" style="margin-bottom: 1.5rem; font-weight: 900; font-size: 1.4rem; color: #000;">Yeni Portföy</h2>
@@ -486,10 +497,8 @@ const app = {
         const p = this.state.properties.find(x => x.id === id);
         const body = document.getElementById('detailBody');
         
-        // Calculation based on type
         let earnings = 0;
         let commDisplay = "";
-        
         const commValue = p.commissionValue || p.rate || 0;
         const commType = p.commissionType || 'percentage';
 
@@ -553,7 +562,7 @@ const app = {
     render() {
         const list = document.getElementById('propertyList');
         const filtered = this.state.properties.filter(p => {
-            const matches = p.address.toLowerCase().includes(this.state.search) || p.owner.toLowerCase().includes(this.state.search);
+            const matches = p.address.toLowerCase().includes(this.state.search) || p.ownerName.toLowerCase().includes(this.state.search);
             return matches && (this.state.filterContract ? p.contract : true);
         });
 
