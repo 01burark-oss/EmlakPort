@@ -42,6 +42,7 @@
             --border: #e5e7eb;
             --success: #10b981;
             --danger: #ef4444;
+            --warning: #f59e0b;
             --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
             --radius: 20px;
             --frame-width: 480px;
@@ -198,7 +199,8 @@
             transition: fill 0.3s var(--easing); 
         }
 
-        .theme-toggle {
+        .header-actions { display: flex; align-items: center; gap: 0.5rem; }
+        .action-btn {
             background: transparent;
             border: none;
             color: var(--text-main);
@@ -210,8 +212,8 @@
             justify-content: center;
             transition: background-color 0.2s;
         }
-        .theme-toggle:active { background: var(--bg); }
-        .theme-toggle svg { width: 24px; height: 24px; stroke: currentColor; fill: none; }
+        .action-btn:active { background: var(--bg); }
+        .action-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; }
 
         .search-bar { display: flex; gap: 0.75rem; }
         .search-input-wrapper { position: relative; flex: 1; }
@@ -357,7 +359,7 @@
             border-top-left-radius: 30px;
             border-top-right-radius: 30px;
             padding: 2rem;
-            padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+            padding-bottom: calc(2rem + env(safe-area-inset-top));
             max-height: 90%;
             overflow-y: auto;
             transform: translateY(100%);
@@ -367,7 +369,7 @@
         .modal-container.active .modal-content { transform: translateY(0); }
 
         /* Custom Confirm Modal */
-        #confirmModal {
+        .confirm-modal-wrapper {
             position: fixed;
             inset: 0;
             z-index: 9999;
@@ -378,7 +380,7 @@
             justify-content: center;
             padding: 2rem;
         }
-        #confirmModal.active { display: flex; }
+        .confirm-modal-wrapper.active { display: flex; }
         .confirm-box {
             background: var(--card-bg);
             width: 100%;
@@ -537,8 +539,11 @@
                 </svg>
                 <span class="font-display">Emlak<span class="logo-port">Port</span></span>
             </div>
-            <div style="display:flex; align-items:center; gap:0.5rem;">
-                <button class="theme-toggle" id="themeToggle" onclick="app.toggleTheme()" aria-label="Temayı Değiştir">
+            <div class="header-actions">
+                <button class="action-btn" onclick="app.openSettings()" aria-label="Ayarlar">
+                    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+                <button class="action-btn" id="themeToggle" onclick="app.toggleTheme()" aria-label="Temayı Değiştir">
                     <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                     <svg id="themeIconSun" style="display:none;" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                 </button>
@@ -632,14 +637,60 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModalContainer" class="modal-container">
+        <div id="settingsModal" class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
+                <h2 style="font-weight: 900; font-size: 1.6rem; color: var(--text-main); margin:0;">Uygulama Ayarları</h2>
+                <button onclick="app.closeSettings()" style="background:none; border:none; cursor:pointer; color:var(--text-muted);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            
+            <div style="background: var(--bg); padding: 1.5rem; border-radius: 24px; margin-bottom: 2rem; border: 1px solid var(--border);">
+                <h4 style="margin: 0 0 1rem; font-weight: 800; color: var(--text-main); font-size: 1rem;">Veri Yedekleme</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+                    Cihazınızdaki tüm portföy verilerini bir yedek dosyası olarak indirebilir veya daha önce aldığınız bir yedeği sisteme yükleyebilirsiniz.
+                </p>
+                <div style="display:flex; flex-direction:column; gap:1rem;">
+                    <button onclick="app.backupData()" class="btn" style="background: var(--success); color: white; width: 100%;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        YEDEĞİ İNDİR (JSON)
+                    </button>
+                    <button onclick="app.triggerRestore()" class="btn btn-outline" style="width: 100%; border-color: var(--warning); color: var(--warning);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        YEDEK YÜKLE (JSON)
+                    </button>
+                    <input type="file" id="restoreInput" hidden accept=".json" onchange="app.handleRestoreFile(this)">
+                </div>
+            </div>
+
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                EmlakPort CRM v1.2 &bull; Elite Edition
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Delete Confirmation Modal -->
-    <div id="confirmModal">
+    <div id="confirmModal" class="confirm-modal-wrapper">
         <div class="confirm-box">
             <h3 class="font-display">Silme Onayı</h3>
             <p>Bu portföyü kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
             <div class="confirm-actions">
                 <button onclick="app.confirmDelete()" class="btn" style="background: var(--danger); color: white;">SİL</button>
                 <button onclick="app.cancelDelete()" class="btn btn-outline">İPTAL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Restore Confirmation Modal -->
+    <div id="restoreConfirmModal" class="confirm-modal-wrapper">
+        <div class="confirm-box">
+            <h3 class="font-display">Yükleme Onayı</h3>
+            <p>DİKKAT! Yedek dosyası yüklendiğinde mevcut tüm verileriniz silinecek ve yedeğiniz geri gelecektir. Emin misiniz?</p>
+            <div class="confirm-actions">
+                <button onclick="app.confirmRestore()" class="btn" style="background: var(--danger); color: white;">YÜKLE</button>
+                <button onclick="app.cancelRestore()" class="btn btn-outline">İPTAL</button>
             </div>
         </div>
     </div>
@@ -666,6 +717,7 @@ const app = {
         selectedId: null,
         editingId: null,
         pendingDeleteId: null,
+        tempRestoreData: null,
         lastBackPress: 0,
         tempImages: [],
         currentCommType: 'percentage',
@@ -703,6 +755,10 @@ const app = {
         document.getElementById('modalContainer').onclick = (e) => {
             if(e.target.id === 'modalContainer') this.closeModal();
         };
+        
+        document.getElementById('settingsModalContainer').onclick = (e) => {
+            if(e.target.id === 'settingsModalContainer') this.closeSettings();
+        };
     },
 
     toggleTheme() {
@@ -736,7 +792,15 @@ const app = {
     handlePopState(e) {
         const detailOverlay = document.getElementById('detailOverlay');
         const modalContainer = document.getElementById('modalContainer');
+        const settingsModal = document.getElementById('settingsModalContainer');
         const confirmModal = document.getElementById('confirmModal');
+        const restoreConfirmModal = document.getElementById('restoreConfirmModal');
+
+        if (restoreConfirmModal && restoreConfirmModal.classList.contains('active')) {
+            restoreConfirmModal.classList.remove('active');
+            this.state.tempRestoreData = null;
+            return;
+        }
 
         if (confirmModal && confirmModal.classList.contains('active')) {
             confirmModal.classList.remove('active');
@@ -746,10 +810,12 @@ const app = {
 
         const isDetailOpen = detailOverlay && detailOverlay.classList.contains('active');
         const isModalOpen = modalContainer && modalContainer.classList.contains('active');
+        const isSettingsOpen = settingsModal && settingsModal.classList.contains('active');
 
-        if (isDetailOpen || isModalOpen) {
+        if (isDetailOpen || isModalOpen || isSettingsOpen) {
             if (detailOverlay) detailOverlay.classList.remove('active');
             if (modalContainer) modalContainer.classList.remove('active');
+            if (settingsModal) settingsModal.classList.remove('active');
             this.state.selectedId = null;
             this.state.editingId = null;
             this.state.tempImages = [];
@@ -758,7 +824,7 @@ const app = {
 
         const now = Date.now();
         if (now - this.state.lastBackPress < 2000) {
-            // Exit sequence
+            // Exit sequence logic
         } else {
             this.state.lastBackPress = now;
             this.showToast("Çıkmak için tekrar basınız");
@@ -904,6 +970,104 @@ const app = {
         if (modal && modal.classList.contains('active')) {
             history.back();
         }
+    },
+
+    openSettings() {
+        const modal = document.getElementById('settingsModalContainer');
+        if (modal) {
+            modal.classList.add('active');
+            history.pushState({ modal: 'settings' }, null, "");
+        }
+    },
+
+    closeSettings() {
+        const modal = document.getElementById('settingsModalContainer');
+        if (modal && modal.classList.contains('active')) {
+            history.back();
+        }
+    },
+
+    backupData() {
+        try {
+            const data = localStorage.getItem('emlak_premium_db') || "[]";
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `emlakport_yedek_${date}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            this.showToast("Yedek dosyası indirildi.");
+        } catch (err) {
+            console.error(err);
+            alert("Yedekleme sırasında bir hata oluştu.");
+        }
+    },
+
+    triggerRestore() {
+        document.getElementById('restoreInput').click();
+    },
+
+    handleRestoreFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!Array.isArray(data)) {
+                    throw new Error("Geçersiz yedek dosyası formatı.");
+                }
+
+                // Stage for confirmation
+                this.state.tempRestoreData = data;
+                
+                // Open custom restore confirm modal
+                const modal = document.getElementById('restoreConfirmModal');
+                if (modal) {
+                    modal.classList.add('active');
+                    history.pushState({ modal: 'restore_confirm' }, null, "");
+                }
+
+            } catch (err) {
+                alert("Hata: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        input.value = ""; // Reset input
+    },
+
+    cancelRestore() {
+        const modal = document.getElementById('restoreConfirmModal');
+        if (modal && modal.classList.contains('active')) {
+            history.back();
+        }
+    },
+
+    confirmRestore() {
+        if (!this.state.tempRestoreData) return;
+
+        // Apply backup
+        this.state.properties = this.state.tempRestoreData;
+        this.save();
+        this.render();
+
+        // Cleanup UI
+        const restoreModal = document.getElementById('restoreConfirmModal');
+        const settingsModal = document.getElementById('settingsModalContainer');
+        if (restoreModal) restoreModal.classList.remove('active');
+        if (settingsModal) settingsModal.classList.remove('active');
+        
+        this.state.tempRestoreData = null;
+        
+        // Return to home stack
+        history.go(-2);
+
+        this.showToast("Yedek başarıyla yüklendi.");
     },
 
     handleSave(e) {
